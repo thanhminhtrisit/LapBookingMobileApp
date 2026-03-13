@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "UniLab",
+    "slug": "unilab",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F97316"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.unilab.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F97316"
+      },
+      "package": "com.unilab.app"
+    }
+  }
+}
