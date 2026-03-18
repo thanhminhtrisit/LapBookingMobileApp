@@ -5,47 +5,53 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '../../context/AppContext';
 import {
   GraduationCap,
-  BookOpen,
-  Building2,
   Hash,
   LogOut,
   Shield,
   HelpCircle,
   ChevronRight,
   Bell,
+  Mail,
+  User,
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
-  const { currentUser, logout, bookings } = useApp();
+  const { currentUser, logout } = useApp();
   const insets = useSafeAreaInsets();
 
   if (!currentUser) return null;
 
-  const initials = currentUser.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = currentUser.fullName
+    ? currentUser.fullName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : 'U';
 
-  const myBookings = bookings.filter((b) => b.studentId === currentUser.id);
-  const approved = myBookings.filter((b) => b.status === 'approved').length;
-  const pending = myBookings.filter((b) => b.status === 'pending').length;
-
-  const handleLogout = () => {
-    logout();
+  const handleLogoutPress = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: logout },
+      ]
+    );
   };
 
   const infoRows = [
-    { icon: <Hash size={15} color="#F97316" />, label: 'Student ID', value: currentUser.studentId },
-    { icon: <BookOpen size={15} color="#F97316" />, label: 'Department', value: currentUser.department },
-    { icon: <Building2 size={15} color="#F97316" />, label: 'Faculty', value: currentUser.faculty },
+    { icon: <User size={15} color="#F97316" />, label: 'Username', value: currentUser.username },
+    { icon: <Mail size={15} color="#F97316" />, label: 'Email', value: currentUser.email },
+    { icon: <Hash size={15} color="#F97316" />, label: 'User ID', value: `#${currentUser.userId}` },
   ];
 
   const settingsRows = [
@@ -70,31 +76,26 @@ export default function ProfileScreen() {
           >
             <Text style={styles.avatarText}>{initials}</Text>
           </LinearGradient>
-          <Text style={styles.userName}>{currentUser.name}</Text>
+          <Text style={styles.userName}>{currentUser.fullName}</Text>
           <Text style={styles.userEmail}>{currentUser.email}</Text>
-          <View style={styles.rolePill}>
-            <GraduationCap size={13} color="#F97316" />
-            <Text style={styles.roleText}>Student</Text>
+          
+          <View style={styles.roleContainer}>
+            <View style={styles.rolePill}>
+              <GraduationCap size={13} color="#F97316" />
+              <Text style={styles.roleText}>{currentUser.role}</Text>
+            </View>
+            {currentUser.admin && (
+              <View style={[styles.rolePill, { backgroundColor: '#FEE2E2' }]}>
+                <Shield size={13} color="#EF4444" />
+                <Text style={[styles.roleText, { color: '#EF4444' }]}>Admin</Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          {[
-            { label: 'Total', value: myBookings.length, color: '#111827' },
-            { label: 'Approved', value: approved, color: '#22C55E' },
-            { label: 'Pending', value: pending, color: '#F59E0B' },
-          ].map(({ label, value, color }) => (
-            <View key={label} style={styles.statCard}>
-              <Text style={[styles.statValue, { color }]}>{value}</Text>
-              <Text style={styles.statLabel}>{label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Student Info */}
+        {/* Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>STUDENT INFORMATION</Text>
+          <Text style={styles.sectionHeader}>ACCOUNT INFORMATION</Text>
           <View style={styles.infoList}>
             {infoRows.map(({ icon, label, value }) => (
               <View key={label} style={styles.infoRow}>
@@ -126,11 +127,15 @@ export default function ProfileScreen() {
 
         {/* Logout */}
         <View style={[styles.section, { paddingBottom: insets.bottom + 24 }]}>
-          <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8} onPress={handleLogout}>
+          <TouchableOpacity 
+            style={styles.logoutBtn} 
+            activeOpacity={0.8} 
+            onPress={handleLogoutPress}
+          >
             <LogOut size={18} color="#EF4444" />
             <Text style={styles.logoutText}>Sign Out</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>UniLab v2.4.1 · University Lab Reservation System</Text>
+          <Text style={styles.versionText}>UniLab v3.0.0 · Google Auth Integrated</Text>
         </View>
       </ScrollView>
     </View>
@@ -169,32 +174,21 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 28, color: '#FFFFFF', fontWeight: '700' },
   userName: { fontSize: 18, color: '#111827', fontWeight: '600' },
   userEmail: { fontSize: 13, color: '#9CA3AF', marginTop: 2 },
+  roleContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
   rolePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 8,
     backgroundColor: '#FFF7ED',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 999,
   },
-  roleText: { fontSize: 12, color: '#F97316' },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  statValue: { fontSize: 20, fontWeight: '600' },
-  statLabel: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
+  roleText: { fontSize: 12, color: '#F97316', fontWeight: '600' },
   section: { paddingHorizontal: 20, marginBottom: 16 },
   sectionHeader: {
     fontSize: 11,
