@@ -5,48 +5,56 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '../../context/AppContext';
 import {
   Shield,
-  BookOpen,
-  Building2,
-  Hash,
+  Phone,
+  Mail,
   LogOut,
   Bell,
   HelpCircle,
   ChevronRight,
   BarChart3,
+  CalendarDays,
+  User as UserIcon,
 } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 
 export default function AdminProfileScreen() {
-  const { currentUser, logout, bookings, labs } = useApp();
+  const { currentUser, logout, pendingBookings } = useApp();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
 
   if (!currentUser) return null;
 
-  const initials = currentUser.name
-    .split(' ')
-    .filter((n) => n.length > 0 && n !== 'Dr.' && !n.endsWith('.'))
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = currentUser.fullName
+    ? currentUser.fullName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : '??';
 
-  const totalRequests = bookings.length;
-  const pendingRequests = bookings.filter((b) => b.status === 'pending').length;
-  const approvedRequests = bookings.filter((b) => b.status === 'approved').length;
+  const totalRequests = pendingBookings.length;
+  const pendingRequests = pendingBookings.filter((b) => b.status === 'PENDING').length;
+  const approvedRequests = pendingBookings.filter((b) => b.status === 'APPROVED').length;
 
   const handleLogout = () => {
-    logout();
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: logout },
+    ]);
   };
 
   const infoRows = [
-    { icon: <Hash size={15} color="#F97316" />, label: 'Staff ID', value: currentUser.staffId },
-    { icon: <BookOpen size={15} color="#F97316" />, label: 'Department', value: currentUser.department },
-    { icon: <Building2 size={15} color="#F97316" />, label: 'Faculty', value: currentUser.faculty },
+    { icon: <UserIcon size={15} color="#F97316" />, label: 'Full Name', value: currentUser.fullName },
+    { icon: <Mail size={15} color="#F97316" />, label: 'Email Address', value: currentUser.email },
+    { icon: <Phone size={15} color="#F97316" />, label: 'Phone Number', value: currentUser.phone || 'Not provided' },
   ];
 
   const settingsRows = [
@@ -59,7 +67,7 @@ export default function AdminProfileScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>Admin Profile</Text>
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -68,11 +76,11 @@ export default function AdminProfileScreen() {
           <LinearGradient colors={['#F97316', '#EA580C']} style={styles.avatar}>
             <Text style={styles.avatarText}>{initials}</Text>
           </LinearGradient>
-          <Text style={styles.userName}>{currentUser.name}</Text>
+          <Text style={styles.userName}>{currentUser.fullName}</Text>
           <Text style={styles.userEmail}>{currentUser.email}</Text>
           <View style={styles.rolePill}>
             <Shield size={12} color="#F97316" />
-            <Text style={styles.roleText}>Admin / Lecturer</Text>
+            <Text style={styles.roleText}>{currentUser.role}</Text>
           </View>
         </View>
 
@@ -90,25 +98,39 @@ export default function AdminProfileScreen() {
           ))}
         </View>
 
-        {/* Staff Info */}
+        {/* Personal Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>STAFF INFORMATION</Text>
+          <Text style={styles.sectionHeader}>ACCOUNT INFORMATION</Text>
           <View style={styles.infoList}>
             {infoRows.map(({ icon, label, value }) => (
               <View key={label} style={styles.infoRow}>
                 <View style={styles.infoIconBox}>{icon}</View>
                 <View>
                   <Text style={styles.infoLabel}>{label}</Text>
-                  <Text style={styles.infoValue}>{value ?? '—'}</Text>
+                  <Text style={styles.infoValue}>{value}</Text>
                 </View>
               </View>
             ))}
+            <TouchableOpacity 
+              style={styles.infoRow} 
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('MyAdminBookings')}
+            >
+              <View style={[styles.infoIconBox, { backgroundColor: '#F0FDF4' }]}>
+                <CalendarDays size={15} color="#22C55E" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.infoLabel}>My Reservations</Text>
+                <Text style={styles.infoValue}>View and manage your bookings</Text>
+              </View>
+              <ChevronRight size={15} color="#D1D5DB" />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Assigned Roles */}
+        {/* System Roles */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>ASSIGNED ROLES</Text>
+          <Text style={styles.sectionHeader}>SYSTEM ACCESS</Text>
           <View style={styles.rolesCard}>
             <View style={styles.roleRow}>
               <View style={styles.roleIconOrange}>
@@ -119,21 +141,23 @@ export default function AdminProfileScreen() {
                 <Text style={styles.roleDesc}>Manage labs, approve/reject bookings</Text>
               </View>
             </View>
-            <View style={[styles.roleRow, { borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 12 }]}>
-              <View style={styles.roleIconBlue}>
-                <BarChart3 size={16} color="#3B82F6" />
+            {currentUser.role === 'ADMIN' && (
+              <View style={[styles.roleRow, { borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 12, marginTop: 12 }]}>
+                <View style={styles.roleIconBlue}>
+                  <BarChart3 size={16} color="#3B82F6" />
+                </View>
+                <View>
+                  <Text style={styles.roleName}>System Admin</Text>
+                  <Text style={styles.roleDesc}>Full system configuration access</Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.roleName}>Lecturer</Text>
-                <Text style={styles.roleDesc}>View analytics and student activity</Text>
-              </View>
-            </View>
+            )}
           </View>
         </View>
 
         {/* Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>SETTINGS</Text>
+          <Text style={styles.sectionHeader}>APP SETTINGS</Text>
           <View style={styles.infoList}>
             {settingsRows.map(({ icon, label }) => (
               <TouchableOpacity key={label} style={styles.settingsRow} activeOpacity={0.7}>
@@ -151,9 +175,9 @@ export default function AdminProfileScreen() {
         <View style={[styles.section, { paddingBottom: insets.bottom + 24 }]}>
           <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8} onPress={handleLogout}>
             <LogOut size={18} color="#EF4444" />
-            <Text style={styles.logoutText}>Sign Out</Text>
+            <Text style={styles.logoutText}>Sign Out from {currentUser.role}</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>UniLab v2.4.1 · University Lab Reservation System</Text>
+          <Text style={styles.versionText}>UniLab Mobile v2.5.0 · Backend Connected</Text>
         </View>
       </ScrollView>
     </View>
@@ -202,7 +226,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 999,
   },
-  roleText: { fontSize: 12, color: '#F97316' },
+  roleText: { fontSize: 12, color: '#F97316', fontWeight: '600' },
   statsRow: {
     flexDirection: 'row',
     gap: 12,
@@ -259,7 +283,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 4,
   },
   roleIconOrange: {
     width: 32,

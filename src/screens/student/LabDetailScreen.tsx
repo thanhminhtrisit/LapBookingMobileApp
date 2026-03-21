@@ -5,6 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Image,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -14,30 +16,40 @@ import {
   Users,
   FlaskConical,
   Cpu,
-  Atom,
-  Network,
-  Microscope,
-  Package,
   CheckCircle2,
   AlertCircle,
   Wrench,
+  Package,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
+import { LabResponse } from '../../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const labIconMap: Record<string, React.ReactNode> = {
-  'lab-1': <Cpu size={28} color="#3B82F6" />,
-  'lab-2': <FlaskConical size={28} color="#A855F7" />,
-  'lab-3': <Atom size={28} color="#22C55E" />,
-  'lab-4': <Network size={28} color="#F97316" />,
-  'lab-5': <Microscope size={28} color="#EC4899" />,
+  'AVAILABLE': <Cpu size={28} color="#3B82F6" />,
+  'OCCUPIED': <FlaskConical size={28} color="#EF4444" />,
+  'MAINTENANCE': <Wrench size={28} color="#F59E0B" />,
 };
 
-const labBgMap: Record<string, string> = {
-  'lab-1': '#EFF6FF',
-  'lab-2': '#FAF5FF',
-  'lab-3': '#F0FDF4',
-  'lab-4': '#FFF7ED',
-  'lab-5': '#FDF2F8',
+const statusConfig = {
+  AVAILABLE: {
+    icon: <CheckCircle2 size={14} color="#22C55E" />,
+    text: 'Available',
+    color: '#22C55E',
+    bg: '#F0FDF4',
+  },
+  OCCUPIED: {
+    icon: <AlertCircle size={14} color="#EF4444" />,
+    text: 'Currently Occupied',
+    color: '#EF4444',
+    bg: '#FEF2F2',
+  },
+  MAINTENANCE: {
+    icon: <Wrench size={14} color="#F59E0B" />,
+    text: 'Under Maintenance',
+    color: '#F59E0B',
+    bg: '#FFFBEB',
+  },
 };
 
 export default function LabDetailScreen() {
@@ -46,46 +58,38 @@ export default function LabDetailScreen() {
   const { labs } = useApp();
   const insets = useSafeAreaInsets();
 
-  const lab = labs.find((l) => l.id === route.params?.id);
+  const lab: LabResponse | undefined = labs.find((l) => l.id === route.params?.id);
 
   if (!lab) {
     return (
       <View style={[styles.container, styles.center]}>
         <FlaskConical size={40} color="#D1D5DB" strokeWidth={1} />
         <Text style={styles.notFoundText}>Lab not found</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn2}>
+          <Text style={styles.backBtn2Text}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  const statusConfig = {
-    available: {
-      icon: <CheckCircle2 size={14} color="#22C55E" />,
-      text: 'Available',
-      color: '#22C55E',
-      bg: '#F0FDF4',
-    },
-    occupied: {
-      icon: <AlertCircle size={14} color="#EF4444" />,
-      text: 'Currently Occupied',
-      color: '#EF4444',
-      bg: '#FEF2F2',
-    },
-    maintenance: {
-      icon: <Wrench size={14} color="#F59E0B" />,
-      text: 'Under Maintenance',
-      color: '#F59E0B',
-      bg: '#FFFBEB',
-    },
-  };
+  // Derive display status
+  let displayStatus: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' = 'AVAILABLE';
+  if (lab.status === 'MAINTENANCE' || lab.status === 'CLOSED') {
+    displayStatus = 'MAINTENANCE';
+  } else if (lab.isOccupied) {
+    displayStatus = 'OCCUPIED';
+  }
 
-  const statusInfo = statusConfig[lab.status];
+  const statusInfo = statusConfig[displayStatus];
 
   const btnLabel =
-    lab.status === 'available'
+    displayStatus === 'AVAILABLE'
       ? 'Book This Lab'
-      : lab.status === 'occupied'
+      : displayStatus === 'OCCUPIED'
       ? 'Currently Occupied'
       : 'Under Maintenance';
+
+  const canBook = displayStatus === 'AVAILABLE';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -104,37 +108,47 @@ export default function LabDetailScreen() {
 
       {/* Scrollable Content */}
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Lab Header Card */}
-        <View style={styles.labCard}>
-          <View
-            style={[
-              styles.labIconBox,
-              { backgroundColor: labBgMap[lab.id] ?? '#F9FAFB' },
-            ]}
-          >
-            {labIconMap[lab.id] ?? <FlaskConical size={28} color="#9CA3AF" />}
-          </View>
-          <View style={styles.labCardInfo}>
-            <Text style={styles.labName}>{lab.name}</Text>
-            <Text style={styles.labFaculty}>{lab.faculty}</Text>
-            <View style={[styles.statusPill, { backgroundColor: statusInfo.bg }]}>
-              {statusInfo.icon}
-              <Text style={[styles.statusText, { color: statusInfo.color }]}>
-                {statusInfo.text}
-              </Text>
-            </View>
-          </View>
+        {/* Lab Image/Header */}
+        <View style={styles.imageSection}>
+          <Image 
+            source={{ uri: lab.imageURL || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800' }} 
+            style={styles.labImage}
+            resizeMode="cover"
+          />
+          <LinearGradient 
+            colors={['transparent', 'rgba(0,0,0,0.6)']} 
+            style={styles.imageOverlay}
+          />
         </View>
 
-        {/* Info Pills */}
-        <View style={styles.infoPills}>
-          <View style={[styles.infoPill, { flex: 1 }]}>
-            <MapPin size={14} color="#F97316" />
-            <Text style={styles.infoText}>{lab.location}</Text>
+        {/* Lab Info Card */}
+        <View style={styles.labCard}>
+          <View style={styles.labCardHeader}>
+            <View style={styles.labIconBox}>
+              {labIconMap[displayStatus] ?? <FlaskConical size={28} color="#9CA3AF" />}
+            </View>
+            <View style={styles.labCardInfo}>
+              <Text style={styles.labName}>{lab.name}</Text>
+              <View style={[styles.statusPill, { backgroundColor: statusInfo.bg }]}>
+                {statusInfo.icon}
+                <Text style={[styles.statusText, { color: statusInfo.color }]}>
+                  {statusInfo.text}
+                </Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.infoPill}>
-            <Users size={14} color="#F97316" />
-            <Text style={styles.infoText}>{lab.capacity} seats</Text>
+          
+          <View style={styles.divider} />
+          
+          <View style={styles.infoPills}>
+            <View style={styles.infoRow}>
+              <MapPin size={16} color="#F97316" />
+              <Text style={styles.infoText}>{lab.location}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Users size={16} color="#F97316" />
+              <Text style={styles.infoText}>{lab.capacity} seats available</Text>
+            </View>
           </View>
         </View>
 
@@ -144,22 +158,17 @@ export default function LabDetailScreen() {
           <Text style={styles.description}>{lab.description}</Text>
         </View>
 
-        {/* Equipment */}
-        <View style={[styles.section, { paddingBottom: 100 }]}>
+        {/* Lab Features */}
+        <View style={[styles.section, { paddingBottom: 120 }]}>
           <View style={styles.equipmentHeader}>
             <Package size={15} color="#374151" />
-            <Text style={styles.sectionTitle}>Available Equipment</Text>
+            <Text style={styles.sectionTitle}>Lab Features</Text>
           </View>
-          <View style={styles.equipmentList}>
-            {lab.equipment.map((eq) => (
-              <View key={eq.id} style={styles.equipmentItem}>
-                <View style={styles.equipmentLeft}>
-                  <View style={styles.dot} />
-                  <Text style={styles.equipmentName}>{eq.name}</Text>
-                </View>
-                <View style={styles.qtyBadge}>
-                  <Text style={styles.qtyText}>×{eq.quantity}</Text>
-                </View>
+          <View style={styles.featuresList}>
+            {['High-speed Internet', 'Multimedia Projector', 'Air Conditioned', 'Modern Workstations'].map((feature, idx) => (
+              <View key={idx} style={styles.featureItem}>
+                <CheckCircle2 size={14} color="#22C55E" />
+                <Text style={styles.featureText}>{feature}</Text>
               </View>
             ))}
           </View>
@@ -171,20 +180,20 @@ export default function LabDetailScreen() {
         <TouchableOpacity
           style={[
             styles.bookBtn,
-            lab.status !== 'available' && styles.bookBtnDisabled,
+            !canBook && styles.bookBtnDisabled,
           ]}
-          activeOpacity={lab.status === 'available' ? 0.8 : 1}
+          activeOpacity={canBook ? 0.8 : 1}
           onPress={() => {
-            if (lab.status === 'available') {
+            if (canBook) {
               navigation.navigate('Booking', { id: lab.id });
             }
           }}
-          disabled={lab.status !== 'available'}
+          disabled={!canBook}
         >
           <Text
             style={[
               styles.bookBtnText,
-              lab.status !== 'available' && styles.bookBtnTextDisabled,
+              !canBook && styles.bookBtnTextDisabled,
             ]}
           >
             {btnLabel}
@@ -197,16 +206,18 @@ export default function LabDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  center: { alignItems: 'center', justifyContent: 'center', gap: 8 },
-  notFoundText: { fontSize: 14, color: '#9CA3AF' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  notFoundText: { fontSize: 16, color: '#9CA3AF', fontWeight: '500' },
+  backBtn2: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#F97316', borderRadius: 8, marginTop: 10 },
+  backBtn2Text: { color: '#FFFFFF', fontWeight: '600' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    zIndex: 10,
+    backgroundColor: '#FFFFFF',
   },
   backBtn: {
     width: 36,
@@ -218,27 +229,52 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 16, color: '#111827', fontWeight: '600' },
   scroll: { flex: 1 },
+  imageSection: {
+    height: 200,
+    width: '100%',
+    position: 'relative',
+  },
+  labImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+  },
   labCard: {
     margin: 16,
+    marginTop: -40,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    backgroundColor: '#F9FAFB',
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  labCardHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 16,
+    marginBottom: 16,
   },
   labIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: '#F9FAFB',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   labCardInfo: { flex: 1 },
-  labName: { fontSize: 17, color: '#111827', fontWeight: '600' },
-  labFaculty: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  labName: { fontSize: 18, color: '#111827', fontWeight: '700' },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -247,70 +283,58 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
     alignSelf: 'flex-start',
-    marginTop: 8,
+    marginTop: 6,
   },
-  statusText: { fontSize: 11, fontWeight: '500' },
-  infoPills: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 16,
-    marginBottom: 4,
+  statusText: { fontSize: 11, fontWeight: '600' },
+  divider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 16,
   },
-  infoPill: {
+  infoPills: { gap: 12 },
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    gap: 10,
   },
-  infoText: { fontSize: 12, color: '#4B5563', flexShrink: 1 },
-  section: { paddingHorizontal: 16, marginTop: 16 },
-  sectionTitle: { fontSize: 14, color: '#111827', fontWeight: '500', marginBottom: 8 },
-  description: { fontSize: 13, color: '#6B7280', lineHeight: 22 },
+  infoText: { fontSize: 13, color: '#4B5563' },
+  section: { paddingHorizontal: 20, marginTop: 24 },
+  sectionTitle: { fontSize: 15, color: '#111827', fontWeight: '600', marginBottom: 10 },
+  description: { fontSize: 14, color: '#6B7280', lineHeight: 22 },
   equipmentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  equipmentList: { gap: 8 },
-  equipmentItem: {
+  featuresList: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
     backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
-  equipmentLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#F97316',
-  },
-  equipmentName: { fontSize: 13, color: '#374151' },
-  qtyBadge: {
-    backgroundColor: '#FFF7ED',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  qtyText: { fontSize: 11, color: '#F97316' },
+  featureText: { fontSize: 12, color: '#4B5563' },
   footer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 12,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   bookBtn: {
     backgroundColor: '#F97316',
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: 'center',
     shadowColor: '#F97316',
     shadowOffset: { width: 0, height: 4 },
@@ -323,6 +347,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  bookBtnText: { fontSize: 15, color: '#FFFFFF', fontWeight: '600' },
+  bookBtnText: { fontSize: 16, color: '#FFFFFF', fontWeight: '600' },
   bookBtnTextDisabled: { color: '#9CA3AF' },
 });

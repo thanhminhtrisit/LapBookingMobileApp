@@ -20,10 +20,11 @@ import {
   Bell,
   Mail,
   User,
+  Phone,
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
-  const { currentUser, logout } = useApp();
+  const { currentUser, logout, myBookings } = useApp();
   const insets = useSafeAreaInsets();
 
   if (!currentUser) return null;
@@ -49,9 +50,10 @@ export default function ProfileScreen() {
   };
 
   const infoRows = [
-    { icon: <User size={15} color="#F97316" />, label: 'Username', value: currentUser.username },
+    { icon: <User size={15} color="#F97316" />, label: 'Full Name', value: currentUser.fullName },
     { icon: <Mail size={15} color="#F97316" />, label: 'Email', value: currentUser.email },
-    { icon: <Hash size={15} color="#F97316" />, label: 'User ID', value: `#${currentUser.userId}` },
+    { icon: <Phone size={15} color="#F97316" />, label: 'Phone', value: currentUser.phone || 'Not provided' },
+    { icon: <Hash size={15} color="#F97316" />, label: 'User ID', value: `#${currentUser.id}` },
   ];
 
   const settingsRows = [
@@ -59,6 +61,8 @@ export default function ProfileScreen() {
     { icon: <Shield size={15} color="#6B7280" />, label: 'Privacy & Security' },
     { icon: <HelpCircle size={15} color="#6B7280" />, label: 'Help & Support' },
   ];
+
+  const approvedCount = myBookings.filter(b => b.status === 'APPROVED').length;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -84,12 +88,18 @@ export default function ProfileScreen() {
               <GraduationCap size={13} color="#F97316" />
               <Text style={styles.roleText}>{currentUser.role}</Text>
             </View>
-            {currentUser.admin && (
-              <View style={[styles.rolePill, { backgroundColor: '#FEE2E2' }]}>
-                <Shield size={13} color="#EF4444" />
-                <Text style={[styles.roleText, { color: '#EF4444' }]}>Admin</Text>
-              </View>
-            )}
+          </View>
+        </View>
+
+        {/* Quick Stats */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{myBookings.length}</Text>
+            <Text style={styles.statLabel}>Total Bookings</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={[styles.statValue, { color: '#22C55E' }]}>{approvedCount}</Text>
+            <Text style={styles.statLabel}>Approved</Text>
           </View>
         </View>
 
@@ -111,7 +121,7 @@ export default function ProfileScreen() {
 
         {/* Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>SETTINGS</Text>
+          <Text style={styles.sectionHeader}>APP SETTINGS</Text>
           <View style={styles.infoList}>
             {settingsRows.map(({ icon, label }) => (
               <TouchableOpacity key={label} style={styles.settingsRow} activeOpacity={0.7}>
@@ -135,7 +145,7 @@ export default function ProfileScreen() {
             <LogOut size={18} color="#EF4444" />
             <Text style={styles.logoutText}>Sign Out</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>UniLab v3.0.0 · Google Auth Integrated</Text>
+          <Text style={styles.versionText}>UniLab Mobile v2.5.0 · Backend Integrated</Text>
         </View>
       </ScrollView>
     </View>
@@ -189,6 +199,21 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   roleText: { fontSize: 12, color: '#F97316', fontWeight: '600' },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  statValue: { fontSize: 18, fontWeight: '600', color: '#111827' },
+  statLabel: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
   section: { paddingHorizontal: 20, marginBottom: 16 },
   sectionHeader: {
     fontSize: 11,

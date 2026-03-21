@@ -9,20 +9,26 @@ import ManageLabsScreen from '../screens/admin/ManageLabsScreen';
 import LabFormScreen from '../screens/admin/LabFormScreen';
 import NotificationsScreen from '../screens/admin/NotificationsScreen';
 import ProfileScreen from '../screens/admin/ProfileScreen';
+import UsersScreen from '../screens/admin/UsersScreen';
+import MyBookingsScreen from '../screens/student/MyBookingsScreen';
+import SharedLabsNavigator from './SharedLabsNavigator';
 
 export type ManageLabsStackParamList = {
   ManageLabs: undefined;
-  LabForm: { id?: string } | undefined;
+  LabForm: { id?: number } | undefined;
 };
 
 export type AdminTabParamList = {
   Approvals: undefined;
+  HomeStack: undefined;
   ManageLabsStack: undefined;
-  Notifications: undefined;
-  Profile: undefined;
+  Alerts: undefined;
+  Users: undefined;
+  ProfileStack: undefined;
 };
 
 const ManageLabsStack = createNativeStackNavigator<ManageLabsStackParamList>();
+const AdminProfileStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator<AdminTabParamList>();
 
 function ManageLabsStackNavigator() {
@@ -34,10 +40,20 @@ function ManageLabsStackNavigator() {
   );
 }
 
+function AdminProfileStackNavigator() {
+  return (
+    <AdminProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <AdminProfileStack.Screen name="AdminProfile" component={ProfileScreen} />
+      <AdminProfileStack.Screen name="MyAdminBookings" component={MyBookingsScreen} />
+    </AdminProfileStack.Navigator>
+  );
+}
+
 export default function AdminNavigator() {
-  const { notifications, bookings } = useApp();
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  const pendingCount = bookings.filter((b) => b.status === 'pending').length;
+  const { notifications, pendingBookings, currentUser } = useApp();
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const pendingCount = pendingBookings.length;
+  const isAdmin = currentUser?.role === 'ADMIN';
 
   return (
     <Tab.Navigator
@@ -68,18 +84,33 @@ export default function AdminNavigator() {
           ),
         }}
       />
+      
       <Tab.Screen
-        name="ManageLabsStack"
-        component={ManageLabsStackNavigator}
+        name="HomeStack"
+        component={SharedLabsNavigator}
         options={{
-          tabBarLabel: 'Manage Labs',
+          tabBarLabel: 'Book Labs',
           tabBarIcon: ({ color, focused }) => (
             <FlaskConical size={22} color={color} strokeWidth={focused ? 2.5 : 1.75} />
           ),
         }}
       />
+
+      {isAdmin && (
+        <Tab.Screen
+          name="ManageLabsStack"
+          component={ManageLabsStackNavigator}
+          options={{
+            tabBarLabel: 'Manage',
+            tabBarIcon: ({ color, focused }) => (
+              <User size={22} color={color} strokeWidth={focused ? 2.5 : 1.75} />
+            ),
+          }}
+        />
+      )}
+
       <Tab.Screen
-        name="Notifications"
+        name="Alerts"
         component={NotificationsScreen}
         options={{
           tabBarLabel: 'Alerts',
@@ -90,9 +121,23 @@ export default function AdminNavigator() {
           ),
         }}
       />
+
+      {isAdmin && (
+        <Tab.Screen
+          name="Users"
+          component={UsersScreen}
+          options={{
+            tabBarLabel: 'Users',
+            tabBarIcon: ({ color, focused }) => (
+              <User size={22} color={color} strokeWidth={focused ? 2.5 : 1.75} />
+            ),
+          }}
+        />
+      )}
+
       <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
+        name="ProfileStack"
+        component={AdminProfileStackNavigator}
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, focused }) => (

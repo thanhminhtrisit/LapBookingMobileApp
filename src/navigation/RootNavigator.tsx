@@ -20,9 +20,10 @@ export default function RootNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
       {!currentUser ? (
         <Stack.Screen name="Login" component={LoginScreen} />
-      ) : currentUser.role === 'student' ? (
+      ) : currentUser.role === 'MEMBER' ? (
         <Stack.Screen name="StudentTabs" component={StudentNavigator} />
       ) : (
+        // STAFF and ADMIN both use AdminNavigator
         <Stack.Screen name="AdminTabs" component={AdminNavigator} />
       )}
     </Stack.Navigator>
