@@ -35,7 +35,7 @@ export default function AdminProfileScreen() {
     .toUpperCase()
     .slice(0, 2);
 
-  const roleLabel = currentUser.role === 'ADMIN' ? 'Admin / Lecturer' : 'Staff';
+  const roleLabel = currentUser.role === 'STAFF' ? 'Admin / Lecturer' : 'Staff';
 
   const total = bookings.length;
   const pending = bookings.filter(b => b.status === 'PENDING').length;

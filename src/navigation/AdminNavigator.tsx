@@ -36,8 +36,8 @@ function ManageLabsStackNavigator() {
 
 export default function AdminNavigator() {
   const { notifications, bookings } = useApp();
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  const pendingCount = bookings.filter((b) => b.status === 'pending').length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const pendingCount = bookings.filter((b) => b.status === 'PENDING').length;
 
   return (
     <Tab.Navigator

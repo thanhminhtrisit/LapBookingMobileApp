@@ -34,9 +34,9 @@ const faculties = [
 ];
 
 const statusOptions: { value: LabStatus; label: string; color: string; bg: string }[] = [
-  { value: 'available', label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
-  { value: 'occupied', label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
-  { value: 'maintenance', label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  { value: 'ACTIVE', label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
+  { value: 'MAINTENANCE', label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  { value: 'CLOSED', label: 'Closed', color: '#EF4444', bg: '#FEF2F2' },
 ];
 
 interface EquipmentInput {
@@ -105,7 +105,7 @@ export default function LabFormScreen() {
   const [building, setBuilding] = useState('');
   const [capacity, setCapacity] = useState('');
   const [faculty, setFaculty] = useState(faculties[0]);
-  const [status, setStatus] = useState<LabStatus>('available');
+  const [status, setStatus] = useState<LabStatus>('ACTIVE');
   const [description, setDescription] = useState('');
   const [equipment, setEquipment] = useState<EquipmentInput[]>([
     { id: 'eq-new-1', name: '', quantity: '1' },

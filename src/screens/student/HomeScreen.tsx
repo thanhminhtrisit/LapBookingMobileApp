@@ -23,20 +23,20 @@ import {
 import { useApp } from '../../context/AppContext';
 import { Lab, LabStatus } from '../../data/mockData';
 
-const labIconMap: Record<string, React.ReactNode> = {
-  'lab-1': <Cpu size={20} color="#3B82F6" />,
-  'lab-2': <FlaskConical size={20} color="#A855F7" />,
-  'lab-3': <Atom size={20} color="#22C55E" />,
-  'lab-4': <Network size={20} color="#F97316" />,
-  'lab-5': <Microscope size={20} color="#EC4899" />,
+const labIconMap: Record<number, React.ReactNode> = {
+  1: <Cpu size={20} color="#3B82F6" />,
+  2: <FlaskConical size={20} color="#A855F7" />,
+  3: <Atom size={20} color="#22C55E" />,
+  4: <Network size={20} color="#F97316" />,
+  5: <Microscope size={20} color="#EC4899" />,
 };
 
-const labBgMap: Record<string, string> = {
-  'lab-1': '#EFF6FF',
-  'lab-2': '#FAF5FF',
-  'lab-3': '#F0FDF4',
-  'lab-4': '#FFF7ED',
-  'lab-5': '#FDF2F8',
+const labBgMap: Record<number, string> = {
+  1: '#EFF6FF',
+  2: '#FAF5FF',
+  3: '#F0FDF4',
+  4: '#FFF7ED',
+  5: '#FDF2F8',
 };
 
 const statusConfig: Record<LabStatus, { text: string; color: string; bg: string }> = {
@@ -49,15 +49,13 @@ const filters = ['All', 'Available', 'CS & IT', 'Engineering', 'Sciences'];
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const { labs, bookings, currentUser } = useApp();
+  const { labs, myBookings, currentUser } = useApp();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
 
-  const availableCount = labs.filter((l) => l.status === 'available').length;
-  const myBookings = bookings.filter(
-    (b) => b.studentId === currentUser?.id && b.status === 'pending'
-  ).length;
+  const availableCount = labs.filter((l) => l.status === 'ACTIVE').length;
+  const pendingCount = myBookings.filter(b => b.status === 'PENDING').length;
 
   const filtered = labs.filter((lab) => {
     const matchSearch =
@@ -67,7 +65,7 @@ export default function HomeScreen() {
       activeFilter === 'All'
         ? true
         : activeFilter === 'Available'
-        ? lab.status === 'available'
+        ? lab.status === 'ACTIVE'
         : activeFilter === 'CS & IT'
         ? lab.faculty.includes('Computer')
         : activeFilter === 'Engineering'
@@ -78,7 +76,7 @@ export default function HomeScreen() {
     return matchSearch && matchFilter;
   });
 
-  const firstName = currentUser?.name?.split(' ')[0] ?? 'Student';
+  const firstName = currentUser?.fullName?.split(' ')[0] ?? 'Student';
 
   return (
     <View style={styles.container}>
@@ -98,7 +96,7 @@ export default function HomeScreen() {
             style={styles.avatarBtn}
             onPress={() => navigation.navigate('Profile')}
           >
-            <Text style={styles.avatarText}>{currentUser?.name?.charAt(0) ?? 'A'}</Text>
+            <Text style={styles.avatarText}>{currentUser?.fullName?.charAt(0) ?? 'A'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -107,7 +105,7 @@ export default function HomeScreen() {
           {[
             { label: 'Total Labs', value: labs.length },
             { label: 'Available', value: availableCount },
-            { label: 'Pending', value: myBookings },
+            { label: 'Pending', value: pendingCount },
           ].map(({ label, value }) => (
             <View key={label} style={styles.statCard}>
               <Text style={styles.statValue}>{value}</Text>
@@ -180,10 +178,10 @@ export default function HomeScreen() {
                   <View
                     style={[
                       styles.labIconBox,
-                      { backgroundColor: labBgMap[lab.id] ?? '#F9FAFB' },
+                      { backgroundColor: labBgMap[parseInt(lab.id.split('-')[1])] ?? '#F9FAFB' },
                     ]}
                   >
-                    {labIconMap[lab.id] ?? <FlaskConical size={20} color="#9CA3AF" />}
+                    {labIconMap[parseInt(lab.id.split('-')[1])] ?? <FlaskConical size={20} color="#9CA3AF" />}
                   </View>
                   <View style={styles.labInfo}>
                     <Text style={styles.labName} numberOfLines={1}>

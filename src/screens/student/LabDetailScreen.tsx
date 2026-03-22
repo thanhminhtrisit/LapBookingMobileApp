@@ -25,20 +25,20 @@ import {
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
 
-const labIconMap: Record<string, React.ReactNode> = {
-  'lab-1': <Cpu size={28} color="#3B82F6" />,
-  'lab-2': <FlaskConical size={28} color="#A855F7" />,
-  'lab-3': <Atom size={28} color="#22C55E" />,
-  'lab-4': <Network size={28} color="#F97316" />,
-  'lab-5': <Microscope size={28} color="#EC4899" />,
+const labIconMap: Record<number, React.ReactNode> = {
+  1: <Cpu size={28} color="#3B82F6" />,
+  2: <FlaskConical size={28} color="#A855F7" />,
+  3: <Atom size={28} color="#22C55E" />,
+  4: <Network size={28} color="#F97316" />,
+  5: <Microscope size={28} color="#EC4899" />,
 };
 
-const labBgMap: Record<string, string> = {
-  'lab-1': '#EFF6FF',
-  'lab-2': '#FAF5FF',
-  'lab-3': '#F0FDF4',
-  'lab-4': '#FFF7ED',
-  'lab-5': '#FDF2F8',
+const labBgMap: Record<number, string> = {
+  1: '#EFF6FF',
+  2: '#FAF5FF',
+  3: '#F0FDF4',
+  4: '#FFF7ED',
+  5: '#FDF2F8',
 };
 
 export default function LabDetailScreen() {
@@ -119,10 +119,10 @@ export default function LabDetailScreen() {
           <View
             style={[
               styles.labIconBox,
-              { backgroundColor: labBgMap[lab.id] ?? '#F9FAFB' },
+              { backgroundColor: labBgMap[parseInt(lab.id.split('-')[1])] ?? '#F9FAFB' },
             ]}
           >
-            {labIconMap[lab.id] ?? <FlaskConical size={28} color="#9CA3AF" />}
+            {labIconMap[parseInt(lab.id.split('-')[1])] ?? <FlaskConical size={28} color="#9CA3AF" />}
           </View>
           <View style={styles.labCardInfo}>
             <Text style={styles.labName}>{lab.name}</Text>

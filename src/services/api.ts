@@ -15,6 +15,7 @@ export const API_BASE_URL = Platform.OS === 'android' && !DEV_IP.includes('192.1
 
 export interface UserResponseDTO {
   userId: number;
+  id: number; // alias
   username: string;
   email: string;
   fullName: string;
@@ -25,6 +26,25 @@ export interface UserResponseDTO {
   updatedAt: string;
   role: 'STAFF' | 'MEMBER' | 'SUPPORTER' | 'UNKNOWN';
   staffId?: number;
+  staffCode?: string;
+  department?: string;
+  faculty?: string;
+  studentCode?: string;
+}
+
+export interface CreateBookingRequest {
+  labId: string;
+  studentId: string;
+  date: string;
+  timeSlot: string;
+  purpose: string;
+}
+
+export interface LabResponse {
+  id: string;
+  name: string;
+  location: string;
+  status: string;
 }
 
 const STORAGE_KEYS = {

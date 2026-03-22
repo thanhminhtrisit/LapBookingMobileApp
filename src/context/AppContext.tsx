@@ -8,6 +8,7 @@ import {
   bookings as initialBookings,
   studentNotifications as initialStudentNotifs,
   adminNotifications as initialAdminNotifs,
+  BookingStatus,
 } from '../data/mockData';
 import { authAPI, UserResponseDTO } from '../services/api';
 import { Alert } from 'react-native';
@@ -17,13 +18,19 @@ const WEB_CLIENT_ID = '61094037653-rst3umuupb6pvlqkluasob8vv363tfjd.apps.googleu
 interface AppContextType {
   currentUser: UserResponseDTO | null;
   isLoading: boolean;
+  authError: string | null;
   labs: Lab[];
   bookings: Booking[];
+  myBookings: Booking[];
   notifications: AppNotification[];
   signInWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  loginAsMember: () => Promise<void>;
+  loginAsAdmin: () => Promise<void>;
   logout: () => Promise<void>;
   addBooking: (booking: Omit<Booking, 'id' | 'createdAt'>) => void;
-  updateBookingStatus: (id: string, status: 'approved' | 'rejected', note?: string) => void;
+  updateBookingStatus: (id: string, status: BookingStatus, note?: string) => void;
+  fetchMyBookings: () => void;
   addLab: (lab: Omit<Lab, 'id'>) => void;
   updateLab: (id: string, labData: Partial<Lab>) => void;
   deleteLab: (id: string) => void;
@@ -40,6 +47,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [studentNotifs, setStudentNotifs] = useState<AppNotification[]>(initialStudentNotifs);
   const [adminNotifs, setAdminNotifs] = useState<AppNotification[]>(initialAdminNotifs);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const myBookings = bookings.filter(b => b.studentId === currentUser?.userId.toString());
 
   const notifications = currentUser?.admin ? adminNotifs : studentNotifs;
 
@@ -81,6 +91,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Giả lập dữ liệu từ Backend Spring Boot trả về
       const mockUser: UserResponseDTO = {
         userId: 1,
+        id: 1,
         username: "hailq",
         email: "hailqse183698@fpt.edu.vn",
         fullName: "Le Quoc Hai",
@@ -120,12 +131,97 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // ... (giữ nguyên các hàm addBooking, updateBookingStatus, v.v. của bạn)
+  const loginWithEmail = async (email: string, password: string) => {
+    setIsLoading(true);
+    setAuthError(null);
+    try {
+      // Mock login
+      const mockUser: UserResponseDTO = {
+        userId: 1,
+        id: 1,
+        username: email.split('@')[0],
+        email,
+        fullName: 'Mock User',
+        phone: null,
+        firebaseUid: 'mock',
+        admin: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        role: 'MEMBER',
+        staffCode: '12345',
+        department: 'IT',
+        faculty: 'Computer Science',
+        studentCode: 'SE123456'
+      };
+      setCurrentUser(mockUser);
+    } catch (error: any) {
+      setAuthError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginAsMember = async () => {
+    setIsLoading(true);
+    setAuthError(null);
+    try {
+      const mockUser: UserResponseDTO = {
+        userId: 2,
+        id: 2,
+        username: 'student',
+        email: 'student@example.com',
+        fullName: 'John Doe',
+        phone: null,
+        firebaseUid: 'mock',
+        admin: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        role: 'MEMBER',
+        studentCode: 'SE183698',
+        department: 'Software Engineering',
+        faculty: 'Computer Science & IT'
+      };
+      setCurrentUser(mockUser);
+    } catch (error: any) {
+      setAuthError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginAsAdmin = async () => {
+    setIsLoading(true);
+    setAuthError(null);
+    try {
+      const mockUser: UserResponseDTO = {
+        userId: 3,
+        id: 3,
+        username: 'admin',
+        email: 'admin@example.com',
+        fullName: 'Admin User',
+        phone: null,
+        firebaseUid: 'mock',
+        admin: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        role: 'STAFF',
+        staffCode: 'ADM001',
+        department: 'Administration',
+        faculty: 'Management'
+      };
+      setCurrentUser(mockUser);
+    } catch (error: any) {
+      setAuthError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const addBooking = (booking: Omit<Booking, 'id' | 'createdAt'>) => {
     const newBooking: Booking = { ...booking, id: `bk-${Date.now()}`, createdAt: new Date().toISOString() };
     setBookings((prev) => [...prev, newBooking]);
   };
-  const updateBookingStatus = (id: string, status: 'approved' | 'rejected', note?: string) => {
+  const updateBookingStatus = (id: string, status: BookingStatus, note?: string) => {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status, ...(note ? { note } : {}) } : b)));
   };
   const addLab = (lab: Omit<Lab, 'id'>) => {
@@ -140,24 +236,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const markNotificationRead = (id: string) => {
     if (currentUser?.admin) {
-      setAdminNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+      setAdminNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     } else {
-      setStudentNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+      setStudentNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     }
   };
   const markAllNotificationsRead = () => {
     if (currentUser?.admin) {
-      setAdminNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+      setAdminNotifs((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } else {
-      setStudentNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+      setStudentNotifs((prev) => prev.map((n) => ({ ...n, isRead: true })));
     }
+  };
+  const fetchMyBookings = () => {
+    // Mock fetch, since data is local
   };
 
   return (
     <AppContext.Provider value={{
-      currentUser, isLoading, labs, bookings, notifications,
+      currentUser, isLoading, authError, labs, bookings, myBookings, notifications,
       signInWithGoogle, logout, addBooking, updateBookingStatus,
-      addLab, updateLab, deleteLab, markNotificationRead, markAllNotificationsRead
+      addLab, updateLab, deleteLab, markNotificationRead, markAllNotificationsRead,
+      loginWithEmail, loginAsMember, loginAsAdmin, fetchMyBookings
     }}>
       {children}
     </AppContext.Provider>

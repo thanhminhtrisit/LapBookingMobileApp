@@ -20,7 +20,6 @@ import {
   CheckCircle2,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
-import { CreateBookingRequest, LabResponse } from '../../services/api';
 import { TimeSlot } from '../../data/mockData';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -59,7 +58,7 @@ const formatDate = (d: Date) => {
 export default function BookingScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { labs, createBooking, currentUser } = useApp();
+  const { labs, addBooking, currentUser } = useApp();
   const insets = useSafeAreaInsets();
 
   const [viewDate, setViewDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -102,11 +101,20 @@ export default function BookingScreen() {
     const startTime = `${dateStr}T${slot.start}`;
     const endTime   = `${dateStr}T${slot.end}`;
 
-    createBooking({
+    addBooking({
       labId: lab.id,
-      startTime,
-      endTime,
-      title: purpose.trim() || 'Lab reservation',
+      labName: lab.name,
+      labLocation: lab.location,
+      studentId: currentUser.userId.toString(),
+      studentName: currentUser.fullName,
+      studentEmail: currentUser.email,
+      studentFaculty: 'Computer Science', // TODO: Add faculty to user data
+      date: isoDate,
+      timeSlot: selectedSlot,
+      purpose: purpose.trim(),
+      status: 'PENDING',
+      startTime: slot.start,
+      endTime: slot.end,
       note: purpose.trim(),
     });
     setSubmitted(true);

@@ -27,9 +27,10 @@ const formatDate = (iso: string) => {
 };
 
 const statusConfig: Record<BookingStatus, { label: string; color: string; bg: string }> = {
-  approved: { label: 'Approved', color: '#22C55E', bg: '#F0FDF4' },
-  rejected: { label: 'Rejected', color: '#EF4444', bg: '#FEF2F2' },
-  pending: { label: 'Pending Review', color: '#F59E0B', bg: '#FFFBEB' },
+  APPROVED: { label: 'Approved', color: '#22C55E', bg: '#F0FDF4' },
+  REJECTED: { label: 'Rejected', color: '#EF4444', bg: '#FEF2F2' },
+  PENDING: { label: 'Pending Review', color: '#F59E0B', bg: '#FFFBEB' },
+  CANCELLED: { label: 'Cancelled', color: '#9CA3AF', bg: '#F3F4F6' },
 };
 
 const avatarColors = [
@@ -46,28 +47,28 @@ const getInitials = (name: string) => name.split(' ').map((n) => n[0]).join('').
 type FilterType = 'all' | BookingStatus;
 const filterTabs: { id: FilterType; label: string }[] = [
   { id: 'all', label: 'All' },
-  { id: 'pending', label: 'Pending' },
-  { id: 'approved', label: 'Approved' },
-  { id: 'rejected', label: 'Rejected' },
+  { id: 'PENDING', label: 'Pending' },
+  { id: 'APPROVED', label: 'Approved' },
+  { id: 'REJECTED', label: 'Rejected' },
 ];
 
 export default function ApprovalsScreen() {
   const { bookings, updateBookingStatus } = useApp();
   const insets = useSafeAreaInsets();
-  const [activeFilter, setActiveFilter] = useState<FilterType>('pending');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('PENDING');
   const [rejectModal, setRejectModal] = useState<{ bookingId: string } | null>(null);
   const [rejectNote, setRejectNote] = useState('');
 
-  const pending = bookings.filter((b) => b.status === 'pending').length;
-  const approved = bookings.filter((b) => b.status === 'approved').length;
-  const rejected = bookings.filter((b) => b.status === 'rejected').length;
+  const pending = bookings.filter((b) => b.status === 'PENDING').length;
+  const approved = bookings.filter((b) => b.status === 'APPROVED').length;
+  const rejected = bookings.filter((b) => b.status === 'REJECTED').length;
 
   const filtered = [...bookings]
     .filter((b) => (activeFilter === 'all' ? true : b.status === activeFilter))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const handleReject = (bookingId: string) => {
-    updateBookingStatus(bookingId, 'rejected', rejectNote || 'Request not approved by admin.');
+    updateBookingStatus(bookingId, 'REJECTED', rejectNote || 'Request not approved by admin.');
     setRejectModal(null);
     setRejectNote('');
   };
@@ -169,12 +170,12 @@ export default function ApprovalsScreen() {
                 <Text style={styles.purposeText} numberOfLines={2}>{booking.purpose}</Text>
 
                 {/* Action Buttons */}
-                {booking.status === 'pending' && (
+                {booking.status === 'PENDING' && (
                   <View style={styles.actionRow}>
                     <TouchableOpacity
                       style={styles.approveBtn}
                       activeOpacity={0.8}
-                      onPress={() => updateBookingStatus(booking.id, 'approved')}
+                      onPress={() => updateBookingStatus(booking.id, 'APPROVED')}
                     >
                       <CheckCircle size={15} color="#22C55E" />
                       <Text style={styles.approveBtnText}>Approve</Text>
@@ -191,7 +192,7 @@ export default function ApprovalsScreen() {
                 )}
 
                 {/* Rejection Note */}
-                {booking.status === 'rejected' && booking.note && (
+                {booking.status === 'REJECTED' && booking.note && (
                   <View style={styles.noteBox}>
                     <Text style={styles.noteText}>Note: {booking.note}</Text>
                   </View>

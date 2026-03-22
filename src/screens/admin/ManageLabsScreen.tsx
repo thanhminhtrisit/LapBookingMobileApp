@@ -25,12 +25,12 @@ import {
 import { useApp } from '../../context/AppContext';
 import { Lab, LabStatus } from '../../data/mockData';
 
-const labIconMap: Record<string, React.ReactNode> = {
-  'lab-1': <Cpu size={18} color="#3B82F6" />,
-  'lab-2': <FlaskConical size={18} color="#A855F7" />,
-  'lab-3': <Atom size={18} color="#22C55E" />,
-  'lab-4': <Network size={18} color="#F97316" />,
-  'lab-5': <Microscope size={18} color="#EC4899" />,
+const labIconMap: Record<number, React.ReactNode> = {
+  1: <Cpu size={18} color="#3B82F6" />,
+  2: <FlaskConical size={18} color="#A855F7" />,
+  3: <Atom size={18} color="#22C55E" />,
+  4: <Network size={18} color="#F97316" />,
+  5: <Microscope size={18} color="#EC4899" />,
 };
 
 const statusConfig: Record<LabStatus, { label: string; color: string; bg: string }> = {
@@ -123,7 +123,7 @@ export default function ManageLabsScreen() {
               <View key={lab.id} style={styles.card}>
                 <View style={styles.cardTop}>
                   <View style={styles.labIconBox}>
-                    {labIconMap[lab.id] ?? <FlaskConical size={18} color="#9CA3AF" />}
+                    {labIconMap[parseInt(lab.id.split('-')[1])] ?? <FlaskConical size={18} color="#9CA3AF" />}
                   </View>
                   <View style={styles.labInfo}>
                     <Text style={styles.labName} numberOfLines={1}>{lab.name}</Text>

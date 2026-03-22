@@ -40,7 +40,7 @@ function HomeStackNavigator() {
 
 export default function StudentNavigator() {
   const { notifications } = useApp();
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <Tab.Navigator

@@ -36,6 +36,8 @@ export interface Booking {
   purpose: string;
   status: BookingStatus;
   createdAt: string;
+  startTime: string;
+  endTime: string;
   note?: string;
 }
 
@@ -193,6 +195,8 @@ export const bookings: Booking[] = [
     purpose: 'Final year project development – web application prototype',
     status: 'APPROVED',
     createdAt: '2026-03-10T09:00:00Z',
+    startTime: '08:00',
+    endTime: '12:00',
   },
   {
     id: 'bk-2',
@@ -208,6 +212,8 @@ export const bookings: Booking[] = [
     purpose: 'Networking assignment – VPN configuration lab',
     status: 'PENDING',
     createdAt: '2026-03-11T14:30:00Z',
+    startTime: '13:00',
+    endTime: '17:00',
   },
   {
     id: 'bk-3',
@@ -223,6 +229,8 @@ export const bookings: Booking[] = [
     purpose: 'Cross-faculty elective – optics experiment',
     status: 'REJECTED',
     createdAt: '2026-03-05T11:00:00Z',
+    startTime: '18:00',
+    endTime: '22:00',
     note: 'Lab reserved for Faculty of Applied Sciences students only during this period.',
   },
   {
@@ -239,6 +247,8 @@ export const bookings: Booking[] = [
     purpose: 'Machine learning model training – deep learning project',
     status: 'PENDING',
     createdAt: '2026-03-12T08:15:00Z',
+    startTime: '08:00',
+    endTime: '12:00',
   },
   {
     id: 'bk-5',
@@ -254,6 +264,8 @@ export const bookings: Booking[] = [
     purpose: 'Cybersecurity capstone – firewall configuration and testing',
     status: 'PENDING',
     createdAt: '2026-03-12T10:00:00Z',
+    startTime: '13:00',
+    endTime: '17:00',
   },
   {
     id: 'bk-6',
@@ -269,6 +281,8 @@ export const bookings: Booking[] = [
     purpose: 'Database design project – SQL schema and queries',
     status: 'APPROVED',
     createdAt: '2026-03-09T16:45:00Z',
+    startTime: '18:00',
+    endTime: '22:00',
   },
   {
     id: 'bk-7',
@@ -284,6 +298,8 @@ export const bookings: Booking[] = [
     purpose: 'Optics research – diffraction grating experiments',
     status: 'PENDING',
     createdAt: '2026-03-11T13:20:00Z',
+    startTime: '08:00',
+    endTime: '12:00',
   },
   {
     id: 'bk-8',
@@ -299,6 +315,8 @@ export const bookings: Booking[] = [
     purpose: 'Embedded systems lab – Arduino microcontroller programming',
     status: 'REJECTED',
     createdAt: '2026-03-10T11:00:00Z',
+    startTime: '08:00',
+    endTime: '12:00',
     note: 'Time slot already reserved. Please select another slot.',
   },
 ];

@@ -41,7 +41,7 @@ export default function ProfileScreen() {
                 : currentUser.role === 'STAFF' ? 'Staff'
                 : 'Admin';
 
-  const myBookings = bookings.filter(b => b.userId === currentUser.id);
+  const myBookings = bookings.filter(b => b.studentId === currentUser.userId.toString());
   const total    = myBookings.length;
   const approved = myBookings.filter(b => b.status === 'APPROVED').length;
   const pending  = myBookings.filter(b => b.status === 'PENDING').length;

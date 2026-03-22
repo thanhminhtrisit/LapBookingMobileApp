@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { CalendarDays, Clock, FlaskConical, ChevronRight, Plus } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
-import { BookingStatus, timeSlotLabels, Booking } from '../../data/mockData';
+import { BookingStatus, timeSlotLabels } from '../../data/mockData';
 
 const statusConfig: Record<BookingStatus, { label: string; color: string; bg: string }> = {
   APPROVED: { label: 'Approved', color: '#22C55E', bg: '#F0FDF4' },
@@ -26,28 +26,31 @@ const formatDate = (iso: string) => {
 };
 
 type FilterType = BookingStatus | 'all';
-const filtersList: FilterType[] = ['all', 'PENDING', 'APPROVED', 'REJECTED'];
+const filtersList: FilterType[] = ['all', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'];
 const filterLabels: Record<FilterType, string> = {
-  all: 'All', PENDING: 'Pending', APPROVED: 'Approved', REJECTED: 'Rejected',
+  all: 'All',
+  PENDING: 'Pending',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  CANCELLED: 'Cancelled',
 };
 
 export default function MyBookingsScreen() {
   const navigation = useNavigation<any>();
-  const { bookings, currentUser } = useApp();
+  const { myBookings: allMyBookings, fetchMyBookings } = useApp();
   const insets = useSafeAreaInsets();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
-  const myBookings = bookings
-    .filter((b: Booking) => b.studentId === currentUser?.id)
-    .filter((b: Booking) => (activeFilter === 'all' ? true : b.status === activeFilter))
-    .sort((a: Booking, b: Booking) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const displayed = [...allMyBookings]
+    .filter(b => activeFilter === 'all' ? true : b.status === activeFilter)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const totalBookings = bookings.filter((b: Booking) => b.studentId === currentUser?.id);
   const counts: Record<FilterType, number> = {
-    all: totalBookings.length,
-    PENDING: totalBookings.filter((b: Booking) => b.status === 'PENDING').length,
-    APPROVED: totalBookings.filter((b: Booking) => b.status === 'APPROVED').length,
-    REJECTED: totalBookings.filter((b: Booking) => b.status === 'REJECTED').length,
+    all: allMyBookings.length,
+    PENDING: allMyBookings.filter(b => b.status === 'PENDING').length,
+    APPROVED: allMyBookings.filter(b => b.status === 'APPROVED').length,
+    REJECTED: allMyBookings.filter(b => b.status === 'REJECTED').length,
+    CANCELLED: allMyBookings.filter(b => b.status === 'CANCELLED').length,
   };
 
   return (
@@ -56,7 +59,7 @@ export default function MyBookingsScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>My Bookings</Text>
-          <Text style={styles.headerSub}>{totalBookings.length} total reservations</Text>
+          <Text style={styles.headerSub}>{allMyBookings.length} total reservations</Text>
         </View>
         <TouchableOpacity
           style={styles.addBtn}
@@ -90,16 +93,16 @@ export default function MyBookingsScreen() {
 
       {/* List */}
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {myBookings.length === 0 ? (
+        {displayed.length === 0 ? (
           <View style={styles.emptyState}>
             <CalendarDays size={44} color="#E5E7EB" strokeWidth={1} />
             <Text style={styles.emptyTitle}>No bookings found</Text>
             <Text style={styles.emptyHint}>Tap + to make a new reservation</Text>
           </View>
         ) : (
-          myBookings.map((booking) => {
+          displayed.map((booking) => {
             const { label, color, bg } = statusConfig[booking.status];
-            const slotInfo = timeSlotLabels[booking.timeSlot];
+            const timeStr = booking.startTime.split('T')[1]?.slice(0,5) + ' – ' + booking.endTime.split('T')[1]?.slice(0,5);
             return (
               <View key={booking.id} style={styles.card}>
                 {/* Top Row */}
@@ -119,11 +122,11 @@ export default function MyBookingsScreen() {
                 <View style={styles.cardMeta}>
                   <View style={styles.metaItem}>
                     <CalendarDays size={12} color="#9CA3AF" />
-                    <Text style={styles.metaText}>{formatDate(booking.date)}</Text>
+                    <Text style={styles.metaText}>{formatDate(booking.startTime.split('T')[0])}</Text>
                   </View>
                   <View style={styles.metaItem}>
                     <Clock size={12} color="#9CA3AF" />
-                    <Text style={styles.metaText}>{slotInfo.label} · {slotInfo.time}</Text>
+                    <Text style={styles.metaText}>{timeStr}</Text>
                   </View>
                 </View>
 
