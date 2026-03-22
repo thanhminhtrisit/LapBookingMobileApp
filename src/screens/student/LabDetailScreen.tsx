@@ -86,8 +86,8 @@ export default function LabDetailScreen() {
     displayStatus === 'AVAILABLE'
       ? 'Book This Lab'
       : displayStatus === 'OCCUPIED'
-      ? 'Currently Occupied'
-      : 'Under Maintenance';
+        ? 'Currently Occupied'
+        : 'Under Maintenance';
 
   const canBook = displayStatus === 'AVAILABLE';
 
@@ -110,13 +110,13 @@ export default function LabDetailScreen() {
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Lab Image/Header */}
         <View style={styles.imageSection}>
-          <Image 
-            source={{ uri: lab.imageURL || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800' }} 
+          <Image
+            source={{ uri: lab.imageURL || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800' }}
             style={styles.labImage}
             resizeMode="cover"
           />
-          <LinearGradient 
-            colors={['transparent', 'rgba(0,0,0,0.6)']} 
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.6)']}
             style={styles.imageOverlay}
           />
         </View>
@@ -137,9 +137,9 @@ export default function LabDetailScreen() {
               </View>
             </View>
           </View>
-          
+
           <View style={styles.divider} />
-          
+
           <View style={styles.infoPills}>
             <View style={styles.infoRow}>
               <MapPin size={16} color="#F97316" />
@@ -349,4 +349,37 @@ const styles = StyleSheet.create({
   },
   bookBtnText: { fontSize: 16, color: '#FFFFFF', fontWeight: '600' },
   bookBtnTextDisabled: { color: '#9CA3AF' },
+});
+borderColor: '#F3F4F6',
+  },
+featureText: { fontSize: 12, color: '#4B5563' },
+footer: {
+  paddingHorizontal: 20,
+    paddingTop: 12,
+      backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+          borderTopColor: '#F3F4F6',
+            position: 'absolute',
+              bottom: 0,
+                left: 0,
+                  right: 0,
+  },
+bookBtn: {
+  backgroundColor: '#F97316',
+    borderRadius: 12,
+      paddingVertical: 15,
+        alignItems: 'center',
+          shadowColor: '#F97316',
+            shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.3,
+    shadowRadius: 8,
+      elevation: 4,
+  },
+bookBtnDisabled: {
+  backgroundColor: '#F3F4F6',
+    shadowOpacity: 0,
+      elevation: 0,
+  },
+bookBtnText: { fontSize: 16, color: '#FFFFFF', fontWeight: '600' },
+bookBtnTextDisabled: { color: '#9CA3AF' },
 });

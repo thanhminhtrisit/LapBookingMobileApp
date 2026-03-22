@@ -62,7 +62,7 @@ export default function ManageLabsScreen() {
   const handleToggleStatus = (lab: LabResponse) => {
     const currentDisplay = getDisplayStatus(lab);
     let nextStatus: 'ACTIVE' | 'MAINTENANCE' | 'CLOSED' = 'ACTIVE';
-    
+
     if (currentDisplay === 'AVAILABLE' || currentDisplay === 'OCCUPIED') {
       nextStatus = 'MAINTENANCE';
     } else {
@@ -313,4 +313,9 @@ const styles = StyleSheet.create({
   },
   actionBtnText: { fontSize: 12, fontWeight: '500' },
   actionDivider: { width: 1, backgroundColor: '#F9FAFB' },
+});
+paddingVertical: 10,
+  },
+actionBtnText: { fontSize: 12, fontWeight: '500' },
+actionDivider: { width: 1, backgroundColor: '#F9FAFB' },
 });
