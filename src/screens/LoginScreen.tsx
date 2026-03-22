@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  SafeAreaView, Dimensions,
+  SafeAreaView, Dimensions, TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GraduationCap } from 'lucide-react-native';
@@ -11,6 +11,12 @@ const { height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const { loginWithEmail, loginAsMember, loginAsAdmin, isLoading, authError } = useApp();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = () => {
+    loginWithEmail(username, password);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -53,14 +59,25 @@ export default function LoginScreen() {
           Reserve labs, track your bookings, and manage your university resources seamlessly.
         </Text>
 
-        {/* Google button (calls loginWithEmail with a placeholder — 
-            or wire to real Google Sign-In later) */}
-        <TouchableOpacity style={styles.googleBtn} activeOpacity={0.8}
-          onPress={() => loginWithEmail('member@example.com', 'password123')}
-          disabled={isLoading}
-        >
-          <Text style={styles.googleG}>G</Text>
-          <Text style={styles.googleBtnText}>Continue with Google</Text>
+        {/* Username and password inputs */}
+        <TextInput
+          style={styles.input}
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+
+        <TouchableOpacity style={styles.loginBtn} activeOpacity={0.8} onPress={handleLogin} disabled={isLoading}>
+          <Text style={styles.loginBtnText}>Log In</Text>
         </TouchableOpacity>
 
         {authError ? (
@@ -135,16 +152,6 @@ const styles = StyleSheet.create({
   brandText: { color: '#F97316' },
   subtitleText: { fontSize: 14, color: '#6B7280', marginBottom: 8 },
   bodyText: { fontSize: 12, color: '#9CA3AF', lineHeight: 18, marginBottom: 20 },
-  googleBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12,
-    paddingVertical: 14, backgroundColor: '#FFFFFF',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 2,
-    marginBottom: 12,
-  },
-  googleG: { fontSize: 18, fontWeight: '700', color: '#4285F4' },
-  googleBtnText: { fontSize: 15, color: '#374151', fontWeight: '500' },
   errorText: { fontSize: 12, color: '#EF4444', textAlign: 'center', marginBottom: 8 },
   demoLabel: { fontSize: 11, color: '#9CA3AF', textAlign: 'center', marginBottom: 10 },
   demoRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
@@ -159,4 +166,26 @@ const styles = StyleSheet.create({
   },
   demoSolidText: { fontSize: 13, color: '#FFFFFF', fontWeight: '600', textAlign: 'center' },
   footerText: { fontSize: 11, color: '#9CA3AF', textAlign: 'center' },
+  input: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#111827',
+    marginBottom: 16,
+  },
+  loginBtn: {
+    backgroundColor: '#F97316',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  loginBtnText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
 });

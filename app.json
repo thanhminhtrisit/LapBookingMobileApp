@@ -17,8 +17,7 @@
       "adaptiveIcon": {
         "backgroundColor": "#F97316"
       },
-      "package": "com.unilab.app",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.unilab.app"
     },
     "plugins": [
       "expo-secure-store"

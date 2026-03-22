@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import {
   Booking,
   Lab,
@@ -11,9 +10,6 @@ import {
   BookingStatus,
 } from '../data/mockData';
 import { authAPI, UserResponseDTO } from '../services/api';
-import { Alert } from 'react-native';
-
-const WEB_CLIENT_ID = '61094037653-rst3umuupb6pvlqkluasob8vv363tfjd.apps.googleusercontent.com';
 
 interface AppContextType {
   currentUser: UserResponseDTO | null;
@@ -23,7 +19,6 @@ interface AppContextType {
   bookings: Booking[];
   myBookings: Booking[];
   notifications: AppNotification[];
-  signInWithGoogle: () => Promise<void>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
   loginAsMember: () => Promise<void>;
   loginAsAdmin: () => Promise<void>;
@@ -54,16 +49,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const notifications = currentUser?.admin ? adminNotifs : studentNotifs;
 
   useEffect(() => {
-    configureGoogleSignIn();
     checkExistingUser();
   }, []);
-
-  const configureGoogleSignIn = () => {
-    GoogleSignin.configure({
-      webClientId: WEB_CLIENT_ID,
-      offlineAccess: true,
-    });
-  };
 
   const checkExistingUser = async () => {
     try {
@@ -78,49 +65,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const signInWithGoogle = async () => {
-    setIsLoading(true);
-    try {
-      /**
-       * ⚠️ MOCK LOGIN ĐỂ DEMO
-       * Nếu Google thật đang lỗi cấu hình, chúng ta sẽ dùng dữ liệu giả 
-       * để vào app và demo các tính năng Home, Lab, Booking...
-       */
-      console.log('--- ĐANG CHẠY CHẾ ĐỘ MOCK LOGIN ---');
-      
-      // Giả lập dữ liệu từ Backend Spring Boot trả về
-      const mockUser: UserResponseDTO = {
-        userId: 1,
-        id: 1,
-        username: "hailq",
-        email: "hailqse183698@fpt.edu.vn",
-        fullName: "Le Quoc Hai",
-        phone: null,
-        firebaseUid: "abc123xyz",
-        admin: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        role: 'STAFF'
-      };
-
-      // Tạm thời bỏ qua bước gọi Google/Backend thực tế
-      // Nếu bạn muốn test Backend thực tế, hãy comment đoạn trên và dùng authAPI.signIn("fake-token")
-      
-      setCurrentUser(mockUser);
-      Alert.alert("Demo Mode", "Đã đăng nhập thành công bằng tài khoản Demo.");
-      
-    } catch (error: any) {
-      console.error('Login Error:', error);
-      Alert.alert('Login Failed', error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const logout = async () => {
     try {
       setIsLoading(true);
-      // await GoogleSignin.signOut(); // Có thể lỗi nếu chưa cấu hình đúng nên tạm đóng
       await authAPI.logout();
       setCurrentUser(null);
     } catch (error) {
@@ -255,7 +202,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider value={{
       currentUser, isLoading, authError, labs, bookings, myBookings, notifications,
-      signInWithGoogle, logout, addBooking, updateBookingStatus,
+      logout, addBooking, updateBookingStatus,
       addLab, updateLab, deleteLab, markNotificationRead, markAllNotificationsRead,
       loginWithEmail, loginAsMember, loginAsAdmin, fetchMyBookings
     }}>
