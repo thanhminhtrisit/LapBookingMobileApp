@@ -75,7 +75,7 @@ const fieldStyles = StyleSheet.create({
 export default function LabFormScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { labs, createLab, updateLab } = useApp();
+  const { labs, createLab, updateLab, updateLabStatus } = useApp();
   const insets = useSafeAreaInsets();
 
   const id = route.params?.id;
@@ -127,7 +127,7 @@ export default function LabFormScreen() {
     if (!validate()) return;
     
     setLoading(true);
-    const labData = {
+    const labData: any = {
       name: name.trim(),
       code: code.trim().toUpperCase(),
       building: building.trim(),
@@ -137,12 +137,19 @@ export default function LabFormScreen() {
       status,
       description: description.trim(),
       imageURL: imageURL.trim() || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800',
+      equipment: existingLab?.equipment || "[]",
     };
 
     try {
       if (isEdit && id) {
         await updateLab(id, labData);
+        // Explicitly update status if it changed, as PUT might ignore it
+        if (existingLab && existingLab.status !== status) {
+          await updateLabStatus(id, status);
+        }
       } else {
+        // Backend requires createdAt for insert but isn't auto-generating it correctly
+        labData.createdAt = new Date().toISOString();
         await createLab(labData);
       }
       setSubmitted(true);

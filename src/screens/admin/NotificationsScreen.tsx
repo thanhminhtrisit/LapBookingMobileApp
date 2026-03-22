@@ -106,7 +106,7 @@ export default function AdminNotificationsScreen() {
                 <View style={[styles.iconBox, { backgroundColor: config.bg }]}>
                   <IconComp size={18} color={config.color} />
                 </View>
-                <div style={styles.notifContent}>
+                <View style={styles.notifContent}>
                   <View style={styles.notifTop}>
                     <Text
                       style={[styles.notifTitle, !notif.isRead && styles.notifTitleUnread]}
@@ -120,7 +120,7 @@ export default function AdminNotificationsScreen() {
                     </View>
                   </View>
                   <Text style={styles.notifMessage}>{notif.message}</Text>
-                </div>
+                </View>
               </TouchableOpacity>
             );
           })
