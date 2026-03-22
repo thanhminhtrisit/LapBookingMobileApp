@@ -20,6 +20,7 @@ import {
   CheckCircle2,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
+import { CreateBookingRequest, LabResponse } from '../../services/api';
 import { TimeSlot } from '../../data/mockData';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -33,6 +34,12 @@ const timeSlots: { id: TimeSlot; label: string; time: string; color: string }[] 
   { id: 'afternoon', label: 'Afternoon', time: '1:00 PM – 5:00 PM', color: '#F97316' },
   { id: 'evening', label: 'Evening', time: '6:00 PM – 10:00 PM', color: '#6366F1' },
 ];
+
+const TIME_MAP = {
+  morning:   { start: '08:00:00', end: '12:00:00' },
+  afternoon: { start: '13:00:00', end: '17:00:00' },
+  evening:   { start: '18:00:00', end: '22:00:00' },
+};
 
 const TimeSlotIcon = ({ id, size = 18 }: { id: TimeSlot; size?: number }) => {
   if (id === 'morning') return <Sun size={size} color="#F59E0B" />;
@@ -52,7 +59,7 @@ const formatDate = (d: Date) => {
 export default function BookingScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { labs, addBooking, currentUser } = useApp();
+  const { labs, createBooking, currentUser } = useApp();
   const insets = useSafeAreaInsets();
 
   const [viewDate, setViewDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -90,18 +97,17 @@ export default function BookingScreen() {
 
   const handleConfirm = () => {
     if (!selectedDate || !selectedSlot || !purpose.trim() || !currentUser) return;
-    addBooking({
+    const slot = TIME_MAP[selectedSlot];
+    const dateStr = isoDate; // already "YYYY-MM-DD"
+    const startTime = `${dateStr}T${slot.start}`;
+    const endTime   = `${dateStr}T${slot.end}`;
+
+    createBooking({
       labId: lab.id,
-      labName: lab.name,
-      labLocation: lab.building,
-      studentId: currentUser.id,
-      studentName: currentUser.name,
-      studentEmail: currentUser.email,
-      studentFaculty: currentUser.faculty ?? '',
-      date: isoDate,
-      timeSlot: selectedSlot,
-      purpose,
-      status: 'pending',
+      startTime,
+      endTime,
+      title: purpose.trim() || 'Lab reservation',
+      note: purpose.trim(),
     });
     setSubmitted(true);
   };

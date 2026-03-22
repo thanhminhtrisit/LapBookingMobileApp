@@ -34,9 +34,9 @@ const labIconMap: Record<string, React.ReactNode> = {
 };
 
 const statusConfig: Record<LabStatus, { label: string; color: string; bg: string }> = {
-  available: { label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
-  occupied: { label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
-  maintenance: { label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  ACTIVE: { label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
+  MAINTENANCE: { label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  CLOSED: { label: 'Closed', color: '#EF4444', bg: '#FEF2F2' },
 };
 
 export default function ManageLabsScreen() {
@@ -92,9 +92,9 @@ export default function ManageLabsScreen() {
       {/* Stats */}
       <View style={styles.statsRow}>
         {[
-          { s: 'available' as LabStatus, label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
-          { s: 'occupied' as LabStatus, label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
-          { s: 'maintenance' as LabStatus, label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+          { s: 'ACTIVE' as LabStatus, label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
+          { s: 'MAINTENANCE' as LabStatus, label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+          { s: 'CLOSED' as LabStatus, label: 'Closed', color: '#EF4444', bg: '#FEF2F2' },
         ].map(({ s, label, color, bg }) => {
           const count = labs.filter((l) => l.status === s).length;
           return (
@@ -115,7 +115,10 @@ export default function ManageLabsScreen() {
           </View>
         ) : (
           filtered.map((lab: Lab) => {
-            const sc = statusConfig[lab.status];
+            const isOccupied = lab.isOccupied === true;
+            const status = isOccupied
+              ? { label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' }
+              : statusConfig[lab.status];
             return (
               <View key={lab.id} style={styles.card}>
                 <View style={styles.cardTop}>
@@ -128,8 +131,8 @@ export default function ManageLabsScreen() {
                       {lab.building} · {lab.faculty}
                     </Text>
                     <View style={styles.labFooter}>
-                      <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
-                        <Text style={[styles.statusText, { color: sc.color }]}>{sc.label}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+                        <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
                       </View>
                       <Text style={styles.capacityText}>
                         {lab.capacity} seats · {lab.equipment.length} equipment

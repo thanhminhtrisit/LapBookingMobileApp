@@ -40,9 +40,9 @@ const labBgMap: Record<string, string> = {
 };
 
 const statusConfig: Record<LabStatus, { text: string; color: string; bg: string }> = {
-  available: { text: 'Available', color: '#22C55E', bg: '#F0FDF4' },
-  occupied: { text: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
-  maintenance: { text: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  ACTIVE: { text: 'Available', color: '#22C55E', bg: '#F0FDF4' },
+  MAINTENANCE: { text: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  CLOSED: { text: 'Closed', color: '#EF4444', bg: '#FEF2F2' },
 };
 
 const filters = ['All', 'Available', 'CS & IT', 'Engineering', 'Sciences'];

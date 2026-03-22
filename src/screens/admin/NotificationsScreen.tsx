@@ -33,7 +33,7 @@ const NotifIcon = ({ type, size = 18 }: { type: AppNotification['type']; size?: 
 };
 
 const timeAgo = (iso: string) => {
-  const now = new Date('2026-03-12T12:00:00Z');
+  const now = new Date();
   const then = new Date(iso);
   const diffMs = now.getTime() - then.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -47,10 +47,10 @@ const timeAgo = (iso: string) => {
 export default function AdminNotificationsScreen() {
   const { notifications, markNotificationRead, markAllNotificationsRead } = useApp();
   const insets = useSafeAreaInsets();
-  const unread = notifications.filter((n) => !n.read).length;
+  const unread = notifications.filter((n) => !n.isRead).length;
 
   const sorted = [...notifications].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   return (
@@ -87,7 +87,7 @@ export default function AdminNotificationsScreen() {
                 key={notif.id}
                 style={[
                   styles.notifItem,
-                  !notif.read && styles.notifItemUnread,
+                  !notif.isRead && styles.notifItemUnread,
                   idx < sorted.length - 1 && styles.notifItemBorder,
                 ]}
                 activeOpacity={0.7}
@@ -99,14 +99,14 @@ export default function AdminNotificationsScreen() {
                 <View style={styles.notifContent}>
                   <View style={styles.notifTop}>
                     <Text
-                      style={[styles.notifTitle, !notif.read && styles.notifTitleUnread]}
+                      style={[styles.notifTitle, !notif.isRead && styles.notifTitleUnread]}
                       numberOfLines={1}
                     >
                       {notif.title}
                     </Text>
                     <View style={styles.notifMeta}>
-                      <Text style={styles.timeText}>{timeAgo(notif.timestamp)}</Text>
-                      {!notif.read && <View style={styles.unreadDot} />}
+                      <Text style={styles.timeText}>{timeAgo(notif.createdAt)}</Text>
+                      {!notif.isRead && <View style={styles.unreadDot} />}
                     </View>
                   </View>
                   <Text style={styles.notifMessage}>{notif.message}</Text>

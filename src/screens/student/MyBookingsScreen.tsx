@@ -10,12 +10,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { CalendarDays, Clock, FlaskConical, ChevronRight, Plus } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
-import { BookingStatus, timeSlotLabels } from '../../data/mockData';
+import { BookingStatus, timeSlotLabels, Booking } from '../../data/mockData';
 
 const statusConfig: Record<BookingStatus, { label: string; color: string; bg: string }> = {
-  approved: { label: 'Approved', color: '#22C55E', bg: '#F0FDF4' },
-  rejected: { label: 'Rejected', color: '#EF4444', bg: '#FEF2F2' },
-  pending: { label: 'Pending', color: '#F59E0B', bg: '#FFFBEB' },
+  APPROVED: { label: 'Approved', color: '#22C55E', bg: '#F0FDF4' },
+  REJECTED: { label: 'Rejected', color: '#EF4444', bg: '#FEF2F2' },
+  PENDING: { label: 'Pending', color: '#F59E0B', bg: '#FFFBEB' },
+  CANCELLED: { label: 'Cancelled', color: '#9CA3AF', bg: '#F3F4F6' },
 };
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -25,9 +26,9 @@ const formatDate = (iso: string) => {
 };
 
 type FilterType = BookingStatus | 'all';
-const filtersList: FilterType[] = ['all', 'pending', 'approved', 'rejected'];
+const filtersList: FilterType[] = ['all', 'PENDING', 'APPROVED', 'REJECTED'];
 const filterLabels: Record<FilterType, string> = {
-  all: 'All', pending: 'Pending', approved: 'Approved', rejected: 'Rejected',
+  all: 'All', PENDING: 'Pending', APPROVED: 'Approved', REJECTED: 'Rejected',
 };
 
 export default function MyBookingsScreen() {
@@ -37,16 +38,16 @@ export default function MyBookingsScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
   const myBookings = bookings
-    .filter((b) => b.studentId === currentUser?.id)
-    .filter((b) => (activeFilter === 'all' ? true : b.status === activeFilter))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    .filter((b: Booking) => b.studentId === currentUser?.id)
+    .filter((b: Booking) => (activeFilter === 'all' ? true : b.status === activeFilter))
+    .sort((a: Booking, b: Booking) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const totalBookings = bookings.filter((b) => b.studentId === currentUser?.id);
+  const totalBookings = bookings.filter((b: Booking) => b.studentId === currentUser?.id);
   const counts: Record<FilterType, number> = {
     all: totalBookings.length,
-    pending: totalBookings.filter((b) => b.status === 'pending').length,
-    approved: totalBookings.filter((b) => b.status === 'approved').length,
-    rejected: totalBookings.filter((b) => b.status === 'rejected').length,
+    PENDING: totalBookings.filter((b: Booking) => b.status === 'PENDING').length,
+    APPROVED: totalBookings.filter((b: Booking) => b.status === 'APPROVED').length,
+    REJECTED: totalBookings.filter((b: Booking) => b.status === 'REJECTED').length,
   };
 
   return (
@@ -130,7 +131,7 @@ export default function MyBookingsScreen() {
                 <Text style={styles.purposeText} numberOfLines={2}>{booking.purpose}</Text>
 
                 {/* Rejection Note */}
-                {booking.status === 'rejected' && booking.note && (
+                {booking.status === 'REJECTED' && booking.note && (
                   <View style={styles.rejectNote}>
                     <Text style={styles.rejectNoteText}>Reason: {booking.note}</Text>
                   </View>

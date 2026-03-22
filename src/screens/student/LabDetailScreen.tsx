@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Wrench,
+  XCircle,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
 
@@ -58,34 +59,43 @@ export default function LabDetailScreen() {
   }
 
   const statusConfig = {
-    available: {
+    ACTIVE: {
       icon: <CheckCircle2 size={14} color="#22C55E" />,
       text: 'Available',
       color: '#22C55E',
       bg: '#F0FDF4',
     },
-    occupied: {
-      icon: <AlertCircle size={14} color="#EF4444" />,
-      text: 'Currently Occupied',
-      color: '#EF4444',
-      bg: '#FEF2F2',
-    },
-    maintenance: {
+    MAINTENANCE: {
       icon: <Wrench size={14} color="#F59E0B" />,
       text: 'Under Maintenance',
       color: '#F59E0B',
       bg: '#FFFBEB',
     },
+    CLOSED: {
+      icon: <XCircle size={14} color="#EF4444" />,
+      text: 'Closed',
+      color: '#EF4444',
+      bg: '#FEF2F2',
+    },
   };
 
-  const statusInfo = statusConfig[lab.status];
+  const isOccupied = lab.isOccupied === true;
+  const statusInfo = isOccupied
+    ? {
+        icon: <AlertCircle size={14} color="#EF4444" />,
+        text: 'Currently Occupied',
+        color: '#EF4444',
+        bg: '#FEF2F2',
+      }
+    : statusConfig[lab.status];
 
-  const btnLabel =
-    lab.status === 'available'
-      ? 'Book This Lab'
-      : lab.status === 'occupied'
-      ? 'Currently Occupied'
-      : 'Under Maintenance';
+  const canBook = lab.status === 'ACTIVE' && !lab.isOccupied;
+
+  const btnLabel = canBook
+    ? 'Book This Lab'
+    : isOccupied
+    ? 'Currently Occupied'
+    : 'Not Available';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -169,24 +179,12 @@ export default function LabDetailScreen() {
       {/* Book Button */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
         <TouchableOpacity
-          style={[
-            styles.bookBtn,
-            lab.status !== 'available' && styles.bookBtnDisabled,
-          ]}
-          activeOpacity={lab.status === 'available' ? 0.8 : 1}
-          onPress={() => {
-            if (lab.status === 'available') {
-              navigation.navigate('Booking', { id: lab.id });
-            }
-          }}
-          disabled={lab.status !== 'available'}
+          style={[styles.bookBtn, !canBook && styles.bookBtnDisabled]}
+          activeOpacity={canBook ? 0.8 : 1}
+          onPress={() => canBook && navigation.navigate('Booking', { id: lab.id })}
+          disabled={!canBook}
         >
-          <Text
-            style={[
-              styles.bookBtnText,
-              lab.status !== 'available' && styles.bookBtnTextDisabled,
-            ]}
-          >
+          <Text style={[styles.bookBtnText, !canBook && styles.bookBtnTextDisabled]}>
             {btnLabel}
           </Text>
         </TouchableOpacity>

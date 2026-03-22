@@ -20,38 +20,36 @@ import {
   Bell,
   Mail,
   User,
+  BookOpen,
+  Building2,
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
-  const { currentUser, logout } = useApp();
+  const { currentUser, logout, bookings } = useApp();
   const insets = useSafeAreaInsets();
 
   if (!currentUser) return null;
 
   const initials = currentUser.fullName
-    ? currentUser.fullName
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : 'U';
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 
-  const handleLogoutPress = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: logout },
-      ]
-    );
-  };
+  const roleLabel = currentUser.role === 'MEMBER' ? 'Student'
+                : currentUser.role === 'STAFF' ? 'Staff'
+                : 'Admin';
+
+  const myBookings = bookings.filter(b => b.userId === currentUser.id);
+  const total    = myBookings.length;
+  const approved = myBookings.filter(b => b.status === 'APPROVED').length;
+  const pending  = myBookings.filter(b => b.status === 'PENDING').length;
 
   const infoRows = [
-    { icon: <User size={15} color="#F97316" />, label: 'Username', value: currentUser.username },
-    { icon: <Mail size={15} color="#F97316" />, label: 'Email', value: currentUser.email },
-    { icon: <Hash size={15} color="#F97316" />, label: 'User ID', value: `#${currentUser.userId}` },
+    { icon: <Hash size={15} color="#F97316" />, label: 'Student ID', value: currentUser.studentCode },
+    { icon: <BookOpen size={15} color="#F97316" />, label: 'Department',  value: currentUser.department },
+    { icon: <Building2 size={15} color="#F97316" />, label: 'Faculty',   value: currentUser.faculty },
   ];
 
   const settingsRows = [
@@ -59,6 +57,18 @@ export default function ProfileScreen() {
     { icon: <Shield size={15} color="#6B7280" />, label: 'Privacy & Security' },
     { icon: <HelpCircle size={15} color="#6B7280" />, label: 'Help & Support' },
   ];
+
+  const handleLogoutPress = () => {
+    Alert.alert(
+      'Confirm Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', onPress: () => logout(), style: 'destructive' },
+      ],
+      { cancelable: true }
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -82,20 +92,33 @@ export default function ProfileScreen() {
           <View style={styles.roleContainer}>
             <View style={styles.rolePill}>
               <GraduationCap size={13} color="#F97316" />
-              <Text style={styles.roleText}>{currentUser.role}</Text>
+              <Text style={styles.roleText}>{roleLabel}</Text>
             </View>
-            {currentUser.admin && (
-              <View style={[styles.rolePill, { backgroundColor: '#FEE2E2' }]}>
-                <Shield size={13} color="#EF4444" />
-                <Text style={[styles.roleText, { color: '#EF4444' }]}>Admin</Text>
-              </View>
-            )}
+          </View>
+        </View>
+
+        {/* Stats */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>BOOKING STATISTICS</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{total}</Text>
+              <Text style={styles.statLabel}>Total</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{approved}</Text>
+              <Text style={styles.statLabel}>Approved</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{pending}</Text>
+              <Text style={styles.statLabel}>Pending</Text>
+            </View>
           </View>
         </View>
 
         {/* Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>ACCOUNT INFORMATION</Text>
+          <Text style={styles.sectionHeader}>STUDENT INFORMATION</Text>
           <View style={styles.infoList}>
             {infoRows.map(({ icon, label, value }) => (
               <View key={label} style={styles.infoRow}>
@@ -196,6 +219,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.8,
     marginBottom: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 18,
+    color: '#111827',
+    fontWeight: '700',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
   },
   infoList: {
     backgroundColor: '#F9FAFB',

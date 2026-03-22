@@ -1,55 +1,95 @@
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  SafeAreaView,
+  View, Text, StyleSheet, TouchableOpacity,
+  SafeAreaView, Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { GraduationCap } from 'lucide-react-native';
 import { useApp } from '../context/AppContext';
-import { LogIn } from 'lucide-react-native';
+
+const { height } = Dimensions.get('window');
 
 export default function LoginScreen() {
-  const { signInWithGoogle, isLoading } = useApp();
+  const { loginWithEmail, loginAsMember, loginAsAdmin, isLoading, authError } = useApp();
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Logo Placeholder */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoCircle}>
-            <Image
-              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png' }}
-              style={styles.logo}
+      {/* Orange header area */}
+      <LinearGradient
+        colors={['#F97316', '#EA580C']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.orangeSection}
+      >
+        {/* Decorative blobs */}
+        <View style={[styles.blob, { width: 100, height: 100, top: 20, left: -20, opacity: 0.2 }]} />
+        <View style={[styles.blob, { width: 60, height: 60, top: 60, right: 30, opacity: 0.15 }]} />
+
+        {/* Decorative bar chart illustration */}
+        <View style={styles.barsContainer}>
+          {[40, 70, 55, 85, 45, 65].map((h, i) => (
+            <View
+              key={i}
+              style={[styles.bar, { height: h, marginHorizontal: 5, opacity: 0.35 }]}
             />
+          ))}
+        </View>
+
+        {/* Graduation cap icon at bottom center */}
+        <View style={styles.iconWrapper}>
+          <View style={styles.iconBox}>
+            <GraduationCap size={32} color="#F97316" />
           </View>
         </View>
+      </LinearGradient>
 
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>UniLab</Text>
-          <Text style={styles.subtitle}>University Lab Reservation System</Text>
-        </View>
+      {/* White bottom area */}
+      <View style={styles.whiteSection}>
+        <Text style={styles.welcomeText}>
+          Welcome to <Text style={styles.brandText}>UniLab</Text>
+        </Text>
+        <Text style={styles.subtitleText}>University Lab Reservation System</Text>
+        <Text style={styles.bodyText}>
+          Reserve labs, track your bookings, and manage your university resources seamlessly.
+        </Text>
 
-        <TouchableOpacity
-          style={styles.loginButton}
-          onPress={signInWithGoogle}
+        {/* Google button (calls loginWithEmail with a placeholder — 
+            or wire to real Google Sign-In later) */}
+        <TouchableOpacity style={styles.googleBtn} activeOpacity={0.8}
+          onPress={() => loginWithEmail('member@example.com', 'password123')}
           disabled={isLoading}
-          activeOpacity={0.8}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <LogIn size={20} color="#FFFFFF" />
-              <Text style={styles.loginButtonText}>Sign in with Google</Text>
-            </>
-          )}
+          <Text style={styles.googleG}>G</Text>
+          <Text style={styles.googleBtnText}>Continue with Google</Text>
         </TouchableOpacity>
 
+        {authError ? (
+          <Text style={styles.errorText}>{authError}</Text>
+        ) : null}
+
+        {/* Demo mode */}
+        <Text style={styles.demoLabel}>demo mode</Text>
+        <View style={styles.demoRow}>
+          <TouchableOpacity
+            style={styles.demoOutlineBtn}
+            activeOpacity={0.8}
+            onPress={loginAsMember}
+            disabled={isLoading}
+          >
+            <Text style={styles.demoOutlineText}>Demo as{'\n'}Student</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.demoSolidBtn}
+            activeOpacity={0.8}
+            onPress={loginAsAdmin}
+            disabled={isLoading}
+          >
+            <Text style={styles.demoSolidText}>Demo as{'\n'}Admin / Lecturer</Text>
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.footerText}>
-          Use your university email to access the system
+          By continuing, you agree to our Terms & Privacy Policy
         </Text>
       </View>
     </SafeAreaView>
@@ -57,74 +97,66 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1, backgroundColor: '#F97316' },
+  orangeSection: {
+    height: height * 0.44,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 0,
+    overflow: 'hidden',
+  },
+  blob: { position: 'absolute', borderRadius: 999, backgroundColor: '#FFFFFF' },
+  barsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    position: 'absolute',
+    bottom: 60,
+    left: 0, right: 0,
+    justifyContent: 'center',
+  },
+  bar: { width: 22, borderRadius: 6, backgroundColor: '#FFFFFF' },
+  iconWrapper: { position: 'absolute', bottom: -24, zIndex: 10 },
+  iconBox: {
+    width: 56, height: 56, borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1, shadowRadius: 8, elevation: 6,
+  },
+  whiteSection: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 0,
+    paddingHorizontal: 28,
+    paddingTop: 40,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
+  welcomeText: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 4 },
+  brandText: { color: '#F97316' },
+  subtitleText: { fontSize: 14, color: '#6B7280', marginBottom: 8 },
+  bodyText: { fontSize: 12, color: '#9CA3AF', lineHeight: 18, marginBottom: 20 },
+  googleBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12,
+    paddingVertical: 14, backgroundColor: '#FFFFFF',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 3, elevation: 2,
+    marginBottom: 12,
   },
-  logoContainer: {
-    marginBottom: 40,
+  googleG: { fontSize: 18, fontWeight: '700', color: '#4285F4' },
+  googleBtnText: { fontSize: 15, color: '#374151', fontWeight: '500' },
+  errorText: { fontSize: 12, color: '#EF4444', textAlign: 'center', marginBottom: 8 },
+  demoLabel: { fontSize: 11, color: '#9CA3AF', textAlign: 'center', marginBottom: 10 },
+  demoRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  demoOutlineBtn: {
+    flex: 1, borderWidth: 2, borderColor: '#F97316', borderRadius: 12,
+    paddingVertical: 12, alignItems: 'center',
   },
-  logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#FFF7ED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 5,
+  demoOutlineText: { fontSize: 13, color: '#F97316', fontWeight: '600', textAlign: 'center' },
+  demoSolidBtn: {
+    flex: 1, backgroundColor: '#F97316', borderRadius: 12,
+    paddingVertical: 12, alignItems: 'center',
   },
-  logo: {
-    width: 60,
-    height: 60,
-  },
-  textContainer: {
-    alignItems: 'center',
-    marginBottom: 60,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  loginButton: {
-    width: '100%',
-    height: 56,
-    backgroundColor: '#F97316',
-    borderRadius: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footerText: {
-    marginTop: 24,
-    fontSize: 13,
-    color: '#9CA3AF',
-  },
+  demoSolidText: { fontSize: 13, color: '#FFFFFF', fontWeight: '600', textAlign: 'center' },
+  footerText: { fontSize: 11, color: '#9CA3AF', textAlign: 'center' },
 });

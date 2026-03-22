@@ -22,29 +22,31 @@ import {
 } from 'lucide-react-native';
 
 export default function AdminProfileScreen() {
-  const { currentUser, logout, bookings, labs } = useApp();
+  const { currentUser, logout, bookings } = useApp();
   const insets = useSafeAreaInsets();
 
   if (!currentUser) return null;
 
-  const initials = currentUser.name
+  const initials = currentUser.fullName
     .split(' ')
-    .filter((n) => n.length > 0 && n !== 'Dr.' && !n.endsWith('.'))
-    .map((n) => n[0])
+    .filter(n => !n.endsWith('.'))
+    .map(n => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
 
-  const totalRequests = bookings.length;
-  const pendingRequests = bookings.filter((b) => b.status === 'pending').length;
-  const approvedRequests = bookings.filter((b) => b.status === 'approved').length;
+  const roleLabel = currentUser.role === 'ADMIN' ? 'Admin / Lecturer' : 'Staff';
+
+  const total = bookings.length;
+  const pending = bookings.filter(b => b.status === 'PENDING').length;
+  const approved = bookings.filter(b => b.status === 'APPROVED').length;
 
   const handleLogout = () => {
     logout();
   };
 
   const infoRows = [
-    { icon: <Hash size={15} color="#F97316" />, label: 'Staff ID', value: currentUser.staffId },
+    { icon: <Hash size={15} color="#F97316" />, label: 'Staff ID', value: currentUser.staffCode },
     { icon: <BookOpen size={15} color="#F97316" />, label: 'Department', value: currentUser.department },
     { icon: <Building2 size={15} color="#F97316" />, label: 'Faculty', value: currentUser.faculty },
   ];
@@ -68,20 +70,20 @@ export default function AdminProfileScreen() {
           <LinearGradient colors={['#F97316', '#EA580C']} style={styles.avatar}>
             <Text style={styles.avatarText}>{initials}</Text>
           </LinearGradient>
-          <Text style={styles.userName}>{currentUser.name}</Text>
+          <Text style={styles.userName}>{currentUser.fullName}</Text>
           <Text style={styles.userEmail}>{currentUser.email}</Text>
           <View style={styles.rolePill}>
             <Shield size={12} color="#F97316" />
-            <Text style={styles.roleText}>Admin / Lecturer</Text>
+            <Text style={styles.roleText}>{roleLabel}</Text>
           </View>
         </View>
 
         {/* Stats */}
         <View style={styles.statsRow}>
           {[
-            { label: 'Total Reqs', value: totalRequests, color: '#111827' },
-            { label: 'Pending', value: pendingRequests, color: '#F59E0B' },
-            { label: 'Approved', value: approvedRequests, color: '#22C55E' },
+            { label: 'Total Reqs', value: total, color: '#111827' },
+            { label: 'Pending', value: pending, color: '#F59E0B' },
+            { label: 'Approved', value: approved, color: '#22C55E' },
           ].map(({ label, value, color }) => (
             <View key={label} style={styles.statCard}>
               <Text style={[styles.statValue, { color }]}>{value}</Text>
