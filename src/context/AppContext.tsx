@@ -226,7 +226,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const fetchLabs = useCallback(async () => {
     setLabsLoading(true);
     try {
-      const data = await labsAPI.getAll(); // No filter -> ACTIVE
+      // Try to get all labs by not passing a specific status limit if the backend supports it
+      const data = await labsAPI.getAll(''); 
       setLabs(data);
     } catch (err: any) {
       console.error('Fetch labs error:', err);

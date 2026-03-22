@@ -138,6 +138,10 @@ export default function LabFormScreen() {
       description: description.trim(),
       imageURL: imageURL.trim() || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800',
       equipment: existingLab?.equipment || "[]",
+      // Try multiple field names and formats for created_at
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      createdDate: new Date().toISOString().replace('T', ' ').substring(0, 19),
     };
 
     try {
