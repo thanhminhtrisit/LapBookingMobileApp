@@ -158,8 +158,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const loginAsMember = async () => login('member@example.com', 'password123');
-  const loginAsAdmin = async () => login('admin@lab.com', 'Admin@123');
+  const loginAsMember = async () => {
+    setIsLoading(true);
+    try {
+      const mockMember: UserResponseDTO = {
+        id: 2,
+        fullName: "Student Demo",
+        email: "member@example.com",
+        phone: "0123456789",
+        role: 'MEMBER',
+        createdAt: new Date().toISOString()
+      };
+      setCurrentUser(mockMember);
+      await authAPI.saveMockUser(mockMember);
+      fetchLabs();
+      fetchNotifications();
+      fetchMyBookings();
+      Alert.alert("Demo Mode", "Logged in as Student (Mock)");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginAsAdmin = async () => {
+    setIsLoading(true);
+    try {
+      const mockAdmin: UserResponseDTO = {
+        id: 1,
+        fullName: "Admin Demo",
+        email: "admin@lab.com",
+        phone: "0987654321",
+        role: 'ADMIN',
+        createdAt: new Date().toISOString()
+      };
+      setCurrentUser(mockAdmin);
+      await authAPI.saveMockUser(mockAdmin);
+      fetchLabs();
+      fetchNotifications();
+      fetchPendingBookings();
+      fetchUsers();
+      Alert.alert("Demo Mode", "Logged in as Admin (Mock)");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const logout = async () => {
     setIsLoading(true);

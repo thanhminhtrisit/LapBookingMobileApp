@@ -8,7 +8,7 @@ import { Platform } from 'react-native';
 /**
  * BaseResponse wrapper from backend
  */
-const DEV_IP = '192.168.1.40'; // <--- THAY IP MÁY TÍNH CỦA BẠN VÀO ĐÂY (chạy ipconfig để lấy)
+const DEV_IP = '192.168.0.195'; // <--- UPDATED IP CỦA BẠN
 
 export const API_BASE_URL = Platform.OS === 'android' && !DEV_IP.includes('192.168') 
   ? 'http://10.0.2.2:8082' 
@@ -232,6 +232,10 @@ export const authAPI = {
 
   getStoredUser: () => tokenStorage.getUser(),
   getStoredToken: () => tokenStorage.getToken(),
+
+  saveMockUser: async (user: UserResponseDTO) => {
+    await tokenStorage.save('mock-token', user);
+  },
 };
 
 export const labsAPI = {
