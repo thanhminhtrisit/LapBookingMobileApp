@@ -15,15 +15,16 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   ChevronLeft,
   CheckCircle2,
-  Image as ImageIcon,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
 
-const statusOptions: { value: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE'; label: string; color: string; bg: string }[] = [
-  { value: 'AVAILABLE', label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
-  { value: 'OCCUPIED', label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
+const statusOptions: { value: 'ACTIVE' | 'MAINTENANCE' | 'CLOSED'; label: string; color: string; bg: string }[] = [
+  { value: 'ACTIVE', label: 'Active', color: '#22C55E', bg: '#F0FDF4' },
   { value: 'MAINTENANCE', label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  { value: 'CLOSED', label: 'Closed', color: '#EF4444', bg: '#FEF2F2' },
 ];
+
+const faculties = ['CS & IT', 'Engineering', 'Sciences', 'Business', 'Arts'];
 
 const InputField = ({
   label,
@@ -82,9 +83,12 @@ export default function LabFormScreen() {
   const existingLab = labs.find((l) => l.id === id);
 
   const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const [building, setBuilding] = useState('');
   const [location, setLocation] = useState('');
+  const [faculty, setFaculty] = useState(faculties[0]);
   const [capacity, setCapacity] = useState('');
-  const [status, setStatus] = useState<'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE'>('AVAILABLE');
+  const [status, setStatus] = useState<'ACTIVE' | 'MAINTENANCE' | 'CLOSED'>('ACTIVE');
   const [description, setDescription] = useState('');
   const [imageURL, setImageURL] = useState('');
   
@@ -95,9 +99,12 @@ export default function LabFormScreen() {
   useEffect(() => {
     if (existingLab) {
       setName(existingLab.name);
+      setCode(existingLab.code || '');
+      setBuilding(existingLab.building || '');
       setLocation(existingLab.location);
+      setFaculty(existingLab.faculty || faculties[0]);
       setCapacity(String(existingLab.capacity));
-      setStatus(existingLab.status);
+      setStatus(existingLab.status as any);
       setDescription(existingLab.description);
       setImageURL(existingLab.imageURL || '');
     }
@@ -106,6 +113,8 @@ export default function LabFormScreen() {
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = 'Lab name is required';
+    if (!code.trim()) errs.code = 'Lab code is required';
+    if (!building.trim()) errs.building = 'Building is required';
     if (!location.trim()) errs.location = 'Location is required';
     if (!capacity || isNaN(Number(capacity)) || Number(capacity) < 1)
       errs.capacity = 'Valid capacity required';
@@ -120,11 +129,14 @@ export default function LabFormScreen() {
     setLoading(true);
     const labData = {
       name: name.trim(),
+      code: code.trim().toUpperCase(),
+      building: building.trim(),
+      faculty: faculty,
       location: location.trim(),
       capacity: Number(capacity),
       status,
       description: description.trim(),
-      imageURL: imageURL.trim() || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800', // default image
+      imageURL: imageURL.trim() || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800',
     };
 
     try {
@@ -197,12 +209,45 @@ export default function LabFormScreen() {
             error={errors.name}
           />
           <InputField
-            label="Location *"
+            label="Lab Code *"
+            value={code}
+            onChange={setCode}
+            placeholder="e.g. LAB-101"
+            error={errors.code}
+          />
+          <InputField
+            label="Building *"
+            value={building}
+            onChange={setBuilding}
+            placeholder="e.g. Building C"
+            error={errors.building}
+          />
+          <InputField
+            label="Location/Room *"
             value={location}
             onChange={setLocation}
-            placeholder="e.g. Building C, Room 201"
+            placeholder="e.g. Room 201"
             error={errors.location}
           />
+
+          <View style={fieldStyles.wrapper}>
+            <Text style={fieldStyles.label}>Faculty</Text>
+            <View style={styles.facultyRow}>
+              {faculties.map((f) => {
+                const active = faculty === f;
+                return (
+                  <TouchableOpacity
+                    key={f}
+                    style={[styles.facultyChip, active && styles.facultyChipActive]}
+                    onPress={() => setFaculty(f)}
+                  >
+                    <Text style={[styles.facultyChipText, active && styles.facultyChipTextActive]}>{f}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
           <InputField
             label="Capacity *"
             value={capacity}
@@ -333,6 +378,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusOptionText: { fontSize: 11, fontWeight: '500' },
+  facultyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+  facultyChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' },
+  facultyChipActive: { borderColor: '#F97316', backgroundColor: '#FFF7ED' },
+  facultyChipText: { fontSize: 12, color: '#6B7280' },
+  facultyChipTextActive: { color: '#F97316', fontWeight: '600' },
   textArea: {
     borderWidth: 1,
     borderColor: '#E5E7EB',

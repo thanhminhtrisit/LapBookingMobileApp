@@ -1,5 +1,5 @@
-export type LabStatus = 'available' | 'occupied' | 'maintenance';
-export type BookingStatus = 'pending' | 'approved' | 'rejected';
+export type LabStatus = 'ACTIVE' | 'MAINTENANCE' | 'CLOSED';
+export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 export type TimeSlot = 'morning' | 'afternoon' | 'evening';
 export type UserRole = 'student' | 'admin';
 
@@ -19,6 +19,7 @@ export interface Lab {
   faculty: string;
   description: string;
   equipment: Equipment[];
+  isOccupied?: boolean;
 }
 
 export interface Booking {
@@ -35,6 +36,8 @@ export interface Booking {
   purpose: string;
   status: BookingStatus;
   createdAt: string;
+  startTime: string;
+  endTime: string;
   note?: string;
 }
 
@@ -55,8 +58,8 @@ export interface AppNotification {
   title: string;
   message: string;
   type: 'success' | 'warning' | 'info' | 'error';
-  timestamp: string;
-  read: boolean;
+  createdAt: string;
+  isRead: boolean;
 }
 
 export const labs: Lab[] = [
@@ -66,7 +69,7 @@ export const labs: Lab[] = [
     location: 'Block C, Level 2, Room C201',
     building: 'Block C',
     capacity: 30,
-    status: 'available',
+    status: 'ACTIVE',
     faculty: 'Computer Science & IT',
     description:
       'A modern computing lab equipped with high-performance workstations for programming, data analysis, and software development courses.',
@@ -85,7 +88,7 @@ export const labs: Lab[] = [
     location: 'Block E, Level 1, Room E105',
     building: 'Block E',
     capacity: 24,
-    status: 'occupied',
+    status: 'ACTIVE',
     faculty: 'Electrical Engineering',
     description:
       'Fully equipped electronics lab for circuit design, PCB fabrication, and embedded systems development.',
@@ -97,6 +100,7 @@ export const labs: Lab[] = [
       { id: 'eq-2-5', name: 'Power Supply Unit (DC)', quantity: 24 },
       { id: 'eq-2-6', name: 'Breadboard & Component Kit', quantity: 24 },
     ],
+    isOccupied: true,
   },
   {
     id: 'lab-3',
@@ -104,7 +108,7 @@ export const labs: Lab[] = [
     location: 'Block P, Level 3, Room P301',
     building: 'Block P',
     capacity: 20,
-    status: 'available',
+    status: 'ACTIVE',
     faculty: 'Applied Sciences',
     description:
       'State-of-the-art physics lab for experimental research in optics, mechanics, thermodynamics, and wave phenomena.',
@@ -123,7 +127,7 @@ export const labs: Lab[] = [
     location: 'Block C, Level 4, Room C401',
     building: 'Block C',
     capacity: 20,
-    status: 'available',
+    status: 'ACTIVE',
     faculty: 'Computer Science & IT',
     description:
       'Isolated network environment for learning network configuration, ethical hacking, penetration testing, and cybersecurity practices.',
@@ -141,7 +145,7 @@ export const labs: Lab[] = [
     location: 'Block B, Level 2, Room B215',
     building: 'Block B',
     capacity: 16,
-    status: 'maintenance',
+    status: 'MAINTENANCE',
     faculty: 'Life Sciences',
     description:
       'Advanced biotechnology lab for molecular biology experiments, DNA analysis, and cell culture research.',
@@ -189,8 +193,10 @@ export const bookings: Booking[] = [
     date: '2026-03-15',
     timeSlot: 'morning',
     purpose: 'Final year project development – web application prototype',
-    status: 'approved',
+    status: 'APPROVED',
     createdAt: '2026-03-10T09:00:00Z',
+    startTime: '08:00',
+    endTime: '12:00',
   },
   {
     id: 'bk-2',
@@ -204,8 +210,10 @@ export const bookings: Booking[] = [
     date: '2026-03-18',
     timeSlot: 'afternoon',
     purpose: 'Networking assignment – VPN configuration lab',
-    status: 'pending',
+    status: 'PENDING',
     createdAt: '2026-03-11T14:30:00Z',
+    startTime: '13:00',
+    endTime: '17:00',
   },
   {
     id: 'bk-3',
@@ -219,8 +227,10 @@ export const bookings: Booking[] = [
     date: '2026-03-08',
     timeSlot: 'evening',
     purpose: 'Cross-faculty elective – optics experiment',
-    status: 'rejected',
+    status: 'REJECTED',
     createdAt: '2026-03-05T11:00:00Z',
+    startTime: '18:00',
+    endTime: '22:00',
     note: 'Lab reserved for Faculty of Applied Sciences students only during this period.',
   },
   {
@@ -235,8 +245,10 @@ export const bookings: Booking[] = [
     date: '2026-03-14',
     timeSlot: 'morning',
     purpose: 'Machine learning model training – deep learning project',
-    status: 'pending',
+    status: 'PENDING',
     createdAt: '2026-03-12T08:15:00Z',
+    startTime: '08:00',
+    endTime: '12:00',
   },
   {
     id: 'bk-5',
@@ -250,8 +262,10 @@ export const bookings: Booking[] = [
     date: '2026-03-16',
     timeSlot: 'afternoon',
     purpose: 'Cybersecurity capstone – firewall configuration and testing',
-    status: 'pending',
+    status: 'PENDING',
     createdAt: '2026-03-12T10:00:00Z',
+    startTime: '13:00',
+    endTime: '17:00',
   },
   {
     id: 'bk-6',
@@ -265,8 +279,10 @@ export const bookings: Booking[] = [
     date: '2026-03-17',
     timeSlot: 'evening',
     purpose: 'Database design project – SQL schema and queries',
-    status: 'approved',
+    status: 'APPROVED',
     createdAt: '2026-03-09T16:45:00Z',
+    startTime: '18:00',
+    endTime: '22:00',
   },
   {
     id: 'bk-7',
@@ -280,8 +296,10 @@ export const bookings: Booking[] = [
     date: '2026-03-13',
     timeSlot: 'morning',
     purpose: 'Optics research – diffraction grating experiments',
-    status: 'pending',
+    status: 'PENDING',
     createdAt: '2026-03-11T13:20:00Z',
+    startTime: '08:00',
+    endTime: '12:00',
   },
   {
     id: 'bk-8',
@@ -295,8 +313,10 @@ export const bookings: Booking[] = [
     date: '2026-03-19',
     timeSlot: 'morning',
     purpose: 'Embedded systems lab – Arduino microcontroller programming',
-    status: 'rejected',
+    status: 'REJECTED',
     createdAt: '2026-03-10T11:00:00Z',
+    startTime: '08:00',
+    endTime: '12:00',
     note: 'Time slot already reserved. Please select another slot.',
   },
 ];
@@ -308,8 +328,8 @@ export const studentNotifications: AppNotification[] = [
     title: 'Booking Approved',
     message: 'Your booking for Computer Science Lab A on Mar 15 (Morning) has been approved.',
     type: 'success',
-    timestamp: '2026-03-11T10:30:00Z',
-    read: false,
+    createdAt: '2026-03-11T10:30:00Z',
+    isRead: false,
   },
   {
     id: 'notif-2',
@@ -317,8 +337,8 @@ export const studentNotifications: AppNotification[] = [
     title: 'Booking Rejected',
     message: 'Your booking for Physics Research Lab on Mar 8 was rejected. Reason: Reserved for Applied Sciences only.',
     type: 'error',
-    timestamp: '2026-03-06T09:00:00Z',
-    read: true,
+    createdAt: '2026-03-06T09:00:00Z',
+    isRead: true,
   },
   {
     id: 'notif-3',
@@ -326,8 +346,8 @@ export const studentNotifications: AppNotification[] = [
     title: 'Session Reminder',
     message: 'You have an upcoming session in Computer Science Lab A tomorrow at 8:00 AM. Please arrive on time.',
     type: 'info',
-    timestamp: '2026-03-14T18:00:00Z',
-    read: false,
+    createdAt: '2026-03-14T18:00:00Z',
+    isRead: false,
   },
   {
     id: 'notif-4',
@@ -335,8 +355,8 @@ export const studentNotifications: AppNotification[] = [
     title: 'Lab Available Again',
     message: 'Biotechnology Lab is back online after maintenance. Reservations are now open.',
     type: 'info',
-    timestamp: '2026-03-10T08:00:00Z',
-    read: true,
+    createdAt: '2026-03-10T08:00:00Z',
+    isRead: true,
   },
   {
     id: 'notif-5',
@@ -344,8 +364,8 @@ export const studentNotifications: AppNotification[] = [
     title: 'Booking Under Review',
     message: 'Your booking for Network & Cybersecurity Lab on Mar 18 is pending approval by admin.',
     type: 'warning',
-    timestamp: '2026-03-11T14:35:00Z',
-    read: false,
+    createdAt: '2026-03-11T14:35:00Z',
+    isRead: false,
   },
 ];
 
@@ -356,8 +376,8 @@ export const adminNotifications: AppNotification[] = [
     title: '3 Pending Requests',
     message: 'There are 3 new lab reservation requests awaiting your review and approval.',
     type: 'warning',
-    timestamp: '2026-03-12T09:00:00Z',
-    read: false,
+    createdAt: '2026-03-12T09:00:00Z',
+    isRead: false,
   },
   {
     id: 'anotif-2',
@@ -365,8 +385,8 @@ export const adminNotifications: AppNotification[] = [
     title: 'Maintenance Complete',
     message: 'Biotechnology Lab maintenance has been completed. Status updated to available.',
     type: 'success',
-    timestamp: '2026-03-10T14:00:00Z',
-    read: true,
+    createdAt: '2026-03-10T14:00:00Z',
+    isRead: true,
   },
   {
     id: 'anotif-3',
@@ -374,8 +394,8 @@ export const adminNotifications: AppNotification[] = [
     title: 'System Update',
     message: 'UniLab reservation system has been updated to version 2.4.1. Check changelog for details.',
     type: 'info',
-    timestamp: '2026-03-08T08:00:00Z',
-    read: true,
+    createdAt: '2026-03-08T08:00:00Z',
+    isRead: true,
   },
   {
     id: 'anotif-4',
@@ -383,8 +403,8 @@ export const adminNotifications: AppNotification[] = [
     title: 'Capacity Alert',
     message: 'Computer Science Lab A has been booked for 5 consecutive sessions. Consider scheduling maintenance.',
     type: 'warning',
-    timestamp: '2026-03-09T11:00:00Z',
-    read: false,
+    createdAt: '2026-03-09T11:00:00Z',
+    isRead: false,
   },
 ];
 

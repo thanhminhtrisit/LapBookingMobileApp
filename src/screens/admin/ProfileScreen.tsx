@@ -21,6 +21,9 @@ import {
   BarChart3,
   CalendarDays,
   User as UserIcon,
+  Hash,
+  BookOpen,
+  Building2,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -40,9 +43,9 @@ export default function AdminProfileScreen() {
         .slice(0, 2)
     : '??';
 
-  const totalRequests = pendingBookings.length;
-  const pendingRequests = pendingBookings.filter((b) => b.status === 'PENDING').length;
-  const approvedRequests = pendingBookings.filter((b) => b.status === 'APPROVED').length;
+  const total = pendingBookings.length;
+  const pending = pendingBookings.filter((b) => b.status === 'PENDING').length;
+  const approved = pendingBookings.filter((b) => b.status === 'APPROVED').length;
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -53,8 +56,10 @@ export default function AdminProfileScreen() {
 
   const infoRows = [
     { icon: <UserIcon size={15} color="#F97316" />, label: 'Full Name', value: currentUser.fullName },
-    { icon: <Mail size={15} color="#F97316" />, label: 'Email Address', value: currentUser.email },
-    { icon: <Phone size={15} color="#F97316" />, label: 'Phone Number', value: currentUser.phone || 'Not provided' },
+    { icon: <Hash size={15} color="#F97316" />, label: 'Staff Code', value: currentUser.staffCode || '—' },
+    { icon: <Mail size={15} color="#F97316" />, label: 'Email', value: currentUser.email },
+    { icon: <Building2 size={15} color="#F97316" />, label: 'Faculty', value: currentUser.faculty || '—' },
+    { icon: <BookOpen size={15} color="#F97316" />, label: 'Department', value: currentUser.department || '—' },
   ];
 
   const settingsRows = [
@@ -87,9 +92,9 @@ export default function AdminProfileScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           {[
-            { label: 'Total Reqs', value: totalRequests, color: '#111827' },
-            { label: 'Pending', value: pendingRequests, color: '#F59E0B' },
-            { label: 'Approved', value: approvedRequests, color: '#22C55E' },
+            { label: 'Total Reqs', value: total, color: '#111827' },
+            { label: 'Pending', value: pending, color: '#F59E0B' },
+            { label: 'Approved', value: approved, color: '#22C55E' },
           ].map(({ label, value, color }) => (
             <View key={label} style={styles.statCard}>
               <Text style={[styles.statValue, { color }]}>{value}</Text>
@@ -114,7 +119,7 @@ export default function AdminProfileScreen() {
             <TouchableOpacity 
               style={styles.infoRow} 
               activeOpacity={0.7}
-              onPress={() => navigation.navigate('MyAdminBookings')}
+              onPress={() => navigation.navigate('MyBookings')}
             >
               <View style={[styles.infoIconBox, { backgroundColor: '#F0FDF4' }]}>
                 <CalendarDays size={15} color="#22C55E" />

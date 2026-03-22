@@ -20,7 +20,8 @@ import {
   Bell,
   Mail,
   User,
-  Phone,
+  BookOpen,
+  Building2,
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
@@ -32,28 +33,26 @@ export default function ProfileScreen() {
   const initials = currentUser.fullName
     ? currentUser.fullName
         .split(' ')
-        .map((n) => n[0])
+        .map(n => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2)
-    : 'U';
+    : '??';
 
-  const handleLogoutPress = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: logout },
-      ]
-    );
-  };
+  const roleLabel = currentUser.role === 'MEMBER' ? 'Student'
+                : currentUser.role === 'STAFF' ? 'Staff'
+                : 'Admin';
+
+  const total    = myBookings.length;
+  const approved = myBookings.filter(b => b.status === 'APPROVED').length;
+  const pending  = myBookings.filter(b => b.status === 'PENDING').length;
 
   const infoRows = [
     { icon: <User size={15} color="#F97316" />, label: 'Full Name', value: currentUser.fullName },
+    { icon: <Hash size={15} color="#F97316" />, label: 'Student ID', value: currentUser.studentCode || '—' },
     { icon: <Mail size={15} color="#F97316" />, label: 'Email', value: currentUser.email },
-    { icon: <Phone size={15} color="#F97316" />, label: 'Phone', value: currentUser.phone || 'Not provided' },
-    { icon: <Hash size={15} color="#F97316" />, label: 'User ID', value: `#${currentUser.id}` },
+    { icon: <Building2 size={15} color="#F97316" />, label: 'Faculty',   value: currentUser.faculty || '—' },
+    { icon: <BookOpen size={15} color="#F97316" />, label: 'Department',  value: currentUser.department || '—' },
   ];
 
   const settingsRows = [
@@ -62,7 +61,17 @@ export default function ProfileScreen() {
     { icon: <HelpCircle size={15} color="#6B7280" />, label: 'Help & Support' },
   ];
 
-  const approvedCount = myBookings.filter(b => b.status === 'APPROVED').length;
+  const handleLogoutPress = () => {
+    Alert.alert(
+      'Confirm Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', onPress: () => logout(), style: 'destructive' },
+      ],
+      { cancelable: true }
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -86,33 +95,40 @@ export default function ProfileScreen() {
           <View style={styles.roleContainer}>
             <View style={styles.rolePill}>
               <GraduationCap size={13} color="#F97316" />
-              <Text style={styles.roleText}>{currentUser.role}</Text>
+              <Text style={styles.roleText}>{roleLabel}</Text>
             </View>
           </View>
         </View>
 
-        {/* Quick Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{myBookings.length}</Text>
-            <Text style={styles.statLabel}>Total Bookings</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: '#22C55E' }]}>{approvedCount}</Text>
-            <Text style={styles.statLabel}>Approved</Text>
+        {/* Stats */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>BOOKING STATISTICS</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{total}</Text>
+              <Text style={styles.statLabel}>Total</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: '#22C55E' }]}>{approved}</Text>
+              <Text style={styles.statLabel}>Approved</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: '#F59E0B' }]}>{pending}</Text>
+              <Text style={styles.statLabel}>Pending</Text>
+            </View>
           </View>
         </View>
 
         {/* Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>ACCOUNT INFORMATION</Text>
+          <Text style={styles.sectionHeader}>PERSONAL INFORMATION</Text>
           <View style={styles.infoList}>
             {infoRows.map(({ icon, label, value }) => (
               <View key={label} style={styles.infoRow}>
                 <View style={styles.infoIconBox}>{icon}</View>
                 <View>
                   <Text style={styles.infoLabel}>{label}</Text>
-                  <Text style={styles.infoValue}>{value ?? '—'}</Text>
+                  <Text style={styles.infoValue}>{value}</Text>
                 </View>
               </View>
             ))}
@@ -199,21 +215,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   roleText: { fontSize: 12, color: '#F97316', fontWeight: '600' },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  statValue: { fontSize: 18, fontWeight: '600', color: '#111827' },
-  statLabel: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
   section: { paddingHorizontal: 20, marginBottom: 16 },
   sectionHeader: {
     fontSize: 11,
@@ -221,6 +222,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.8,
     marginBottom: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 18,
+    color: '#111827',
+    fontWeight: '700',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
   },
   infoList: {
     backgroundColor: '#F9FAFB',

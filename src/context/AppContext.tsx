@@ -342,6 +342,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await fetchUsers();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to update role');
+      throw err;
     }
   };
 

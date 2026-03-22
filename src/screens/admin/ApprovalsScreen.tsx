@@ -56,7 +56,7 @@ const avatarColors = [
 const getAvatarColor = (name: string) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length];
 const getInitials = (name: string) => name ? name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) : '??';
 
-type FilterType = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+type FilterType = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 const filterTabs: { id: FilterType; label: string }[] = [
   { id: 'PENDING', label: 'Pending' },
   { id: 'APPROVED', label: 'Approved' },
@@ -91,7 +91,7 @@ export default function ApprovalsScreen() {
   };
 
   const handleReject = async (id: number) => {
-    await rejectBooking(id, rejectNote);
+    await rejectBooking(id, rejectNote || 'Request not approved by admin.');
     setRejectModal(null);
     setRejectNote('');
     fetchPendingBookings();

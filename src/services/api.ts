@@ -8,6 +8,12 @@ import { Platform } from 'react-native';
 /**
  * BaseResponse wrapper from backend
  */
+const DEV_IP = '192.168.1.40'; // <--- THAY IP MÁY TÍNH CỦA BẠN VÀO ĐÂY (chạy ipconfig để lấy)
+
+export const API_BASE_URL = Platform.OS === 'android' && !DEV_IP.includes('192.168') 
+  ? 'http://10.0.2.2:8082' 
+  : `http://${DEV_IP}:8082`;
+
 export interface BaseResponse<T = any> {
   statusCode: string;
   message: string;
@@ -66,6 +72,7 @@ export interface LabResponse {
   equipment?: string | null; // raw JSON string: '[{"name":"PC","quantity":30}]'
   status: 'ACTIVE' | 'MAINTENANCE' | 'CLOSED';
   isOccupied?: boolean;
+  imageURL?: string | null;
   createdAt: string;
 }
 
@@ -111,16 +118,7 @@ export interface NotificationResponse {
   createdAt: string;
 }
 
-// =======================================================================
-// BASE URL SETUP
-// =======================================================================
 
-const DEV_IP = '192.168.1.40'; // placeholder — user will change
-
-export const API_BASE_URL =
-  Platform.OS === 'android'
-    ? 'http://10.0.2.2:8082'     // emulator
-    : `http://${DEV_IP}:8082`;   // real device
 
 // =======================================================================
 // TOKEN STORAGE

@@ -12,9 +12,22 @@ import { useFocusEffect } from '@react-navigation/native';
 import {
   Info,
   BellOff,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
 import { NotificationResponse } from '../../services/api';
+
+const notifConfig: Record<string, { color: string; bg: string; icon: any }> = {
+  BOOKING_APPROVED: { color: '#22C55E', bg: '#F0FDF4', icon: CheckCircle },
+  BOOKING_REJECTED: { color: '#EF4444', bg: '#FEF2F2', icon: XCircle },
+  BOOKING_CANCELLED: { color: '#9CA3AF', bg: '#F3F4F6', icon: XCircle },
+  LAB_MAINTENANCE: { color: '#F59E0B', bg: '#FFFBEB', icon: AlertTriangle },
+  LAB_CLOSED: { color: '#EF4444', bg: '#FEF2F2', icon: AlertTriangle },
+  BOOKING_IN_PROGRESS: { color: '#3B82F6', bg: '#EFF6FF', icon: Info },
+  DEFAULT: { color: '#60A5FA', bg: '#EFF6FF', icon: Info },
+};
 
 const timeAgo = (iso: string) => {
   if (!iso) return '';
@@ -33,7 +46,7 @@ const timeAgo = (iso: string) => {
 export default function NotificationsScreen() {
   const { notifications, notificationsLoading, fetchNotifications, markNotificationRead, markAllNotificationsRead } = useApp();
   const insets = useSafeAreaInsets();
-
+  
   useFocusEffect(
     useCallback(() => {
       fetchNotifications();
@@ -66,11 +79,7 @@ export default function NotificationsScreen() {
       </View>
 
       {/* List */}
-      <ScrollView 
-        style={styles.scroll} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={sorted.length === 0 ? { flex: 1 } : null}
-      >
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={sorted.length === 0 ? { flex: 1 } : null}>
         {notificationsLoading && sorted.length === 0 ? (
           <ActivityIndicator size="large" color="#F97316" style={{ marginTop: 40 }} />
         ) : sorted.length === 0 ? (
@@ -79,37 +88,42 @@ export default function NotificationsScreen() {
             <Text style={styles.emptyText}>No notifications yet</Text>
           </View>
         ) : (
-          sorted.map((notif: NotificationResponse, idx) => (
-            <TouchableOpacity
-              key={notif.id}
-              style={[
-                styles.notifItem,
-                !notif.isRead && styles.notifItemUnread,
-                idx < sorted.length - 1 && styles.notifItemBorder,
-              ]}
-              activeOpacity={0.7}
-              onPress={() => !notif.isRead && markNotificationRead(notif.id)}
-            >
-              <View style={[styles.iconBox, { backgroundColor: '#EFF6FF' }]}>
-                <Info size={18} color="#60A5FA" />
-              </View>
-              <View style={styles.notifContent}>
-                <View style={styles.notifTop}>
-                  <Text
-                    style={[styles.notifTitle, !notif.isRead && styles.notifTitleUnread]}
-                    numberOfLines={1}
-                  >
-                    {notif.title}
-                  </Text>
-                  <View style={styles.notifMeta}>
-                    <Text style={styles.timeText}>{timeAgo(notif.createdAt)}</Text>
-                    {!notif.isRead && <View style={styles.unreadDot} />}
-                  </View>
+          sorted.map((notif: NotificationResponse, idx) => {
+            const config = notifConfig[notif.type] || notifConfig.DEFAULT;
+            const IconComp = config.icon;
+            
+            return (
+              <TouchableOpacity
+                key={notif.id}
+                style={[
+                  styles.notifItem,
+                  !notif.isRead && styles.notifItemUnread,
+                  idx < sorted.length - 1 && styles.notifItemBorder,
+                ]}
+                activeOpacity={0.7}
+                onPress={() => !notif.isRead && markNotificationRead(notif.id)}
+              >
+                <View style={[styles.iconBox, { backgroundColor: config.bg }]}>
+                  <IconComp size={18} color={config.color} />
                 </View>
-                <Text style={styles.notifMessage}>{notif.message}</Text>
-              </View>
-            </TouchableOpacity>
-          ))
+                <View style={styles.notifContent}>
+                  <View style={styles.notifTop}>
+                    <Text
+                      style={[styles.notifTitle, !notif.isRead && styles.notifTitleUnread]}
+                      numberOfLines={1}
+                    >
+                      {notif.title}
+                    </Text>
+                    <View style={styles.notifMeta}>
+                      <Text style={styles.timeText}>{timeAgo(notif.createdAt)}</Text>
+                      {!notif.isRead && <View style={styles.unreadDot} />}
+                    </View>
+                  </View>
+                  <Text style={styles.notifMessage}>{notif.message}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })
         )}
       </ScrollView>
     </View>
@@ -149,7 +163,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
   },
   notifContent: { flex: 1 },
   notifTop: {
@@ -159,9 +172,9 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 4,
   },
-  notifTitle: { fontSize: 13, color: '#6B7280', flex: 1, fontWeight: '400' },
+  notifTitle: { fontSize: 13, color: '#6B7280', flex: 1 },
   notifTitleUnread: { color: '#111827', fontWeight: '500' },
-  notifMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
+  notifMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   timeText: { fontSize: 11, color: '#D1D5DB' },
   unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#F97316' },
   notifMessage: { fontSize: 12, color: '#9CA3AF', lineHeight: 18 },

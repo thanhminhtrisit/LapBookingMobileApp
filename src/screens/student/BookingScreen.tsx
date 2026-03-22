@@ -65,7 +65,7 @@ export default function BookingScreen() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const lab = labs.find((l) => l.id === route.params?.id);
+  const lab = labs.find((l) => l.id.toString() === route.params?.id.toString());
   if (!lab) return null;
 
   const year = viewDate.getFullYear();

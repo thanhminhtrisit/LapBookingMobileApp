@@ -29,6 +29,7 @@ const labIconMap: Record<string, React.ReactNode> = {
   'AVAILABLE': <Cpu size={28} color="#3B82F6" />,
   'OCCUPIED': <FlaskConical size={28} color="#EF4444" />,
   'MAINTENANCE': <Wrench size={28} color="#F59E0B" />,
+  'CLOSED': <AlertCircle size={28} color="#EF4444" />,
 };
 
 const statusConfig = {
@@ -50,6 +51,12 @@ const statusConfig = {
     color: '#F59E0B',
     bg: '#FFFBEB',
   },
+  CLOSED: {
+    icon: <AlertCircle size={14} color="#EF4444" />,
+    text: 'Closed',
+    color: '#EF4444',
+    bg: '#FEF2F2',
+  },
 };
 
 export default function LabDetailScreen() {
@@ -58,7 +65,7 @@ export default function LabDetailScreen() {
   const { labs } = useApp();
   const insets = useSafeAreaInsets();
 
-  const lab: LabResponse | undefined = labs.find((l) => l.id === route.params?.id);
+  const lab: LabResponse | undefined = labs.find((l) => l.id.toString() === route.params?.id.toString());
 
   if (!lab) {
     return (
@@ -73,9 +80,11 @@ export default function LabDetailScreen() {
   }
 
   // Derive display status
-  let displayStatus: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' = 'AVAILABLE';
-  if (lab.status === 'MAINTENANCE' || lab.status === 'CLOSED') {
+  let displayStatus: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'CLOSED' = 'AVAILABLE';
+  if (lab.status === 'MAINTENANCE') {
     displayStatus = 'MAINTENANCE';
+  } else if (lab.status === 'CLOSED') {
+    displayStatus = 'CLOSED';
   } else if (lab.isOccupied) {
     displayStatus = 'OCCUPIED';
   }
@@ -87,7 +96,7 @@ export default function LabDetailScreen() {
       ? 'Book This Lab'
       : displayStatus === 'OCCUPIED'
         ? 'Currently Occupied'
-        : 'Under Maintenance';
+        : 'Not Available';
 
   const canBook = displayStatus === 'AVAILABLE';
 
@@ -147,7 +156,7 @@ export default function LabDetailScreen() {
             </View>
             <View style={styles.infoRow}>
               <Users size={16} color="#F97316" />
-              <Text style={styles.infoText}>{lab.capacity} seats available</Text>
+              <Text style={styles.infoText}>{lab.capacity} Seats Available</Text>
             </View>
           </View>
         </View>
@@ -155,7 +164,7 @@ export default function LabDetailScreen() {
         {/* Description */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About this Lab</Text>
-          <Text style={styles.description}>{lab.description}</Text>
+          <Text style={styles.description}>{lab.description || 'No description provided for this laboratory.'}</Text>
         </View>
 
         {/* Lab Features */}
@@ -349,37 +358,4 @@ const styles = StyleSheet.create({
   },
   bookBtnText: { fontSize: 16, color: '#FFFFFF', fontWeight: '600' },
   bookBtnTextDisabled: { color: '#9CA3AF' },
-});
-borderColor: '#F3F4F6',
-  },
-featureText: { fontSize: 12, color: '#4B5563' },
-footer: {
-  paddingHorizontal: 20,
-    paddingTop: 12,
-      backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-          borderTopColor: '#F3F4F6',
-            position: 'absolute',
-              bottom: 0,
-                left: 0,
-                  right: 0,
-  },
-bookBtn: {
-  backgroundColor: '#F97316',
-    borderRadius: 12,
-      paddingVertical: 15,
-        alignItems: 'center',
-          shadowColor: '#F97316',
-            shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.3,
-    shadowRadius: 8,
-      elevation: 4,
-  },
-bookBtnDisabled: {
-  backgroundColor: '#F3F4F6',
-    shadowOpacity: 0,
-      elevation: 0,
-  },
-bookBtnText: { fontSize: 16, color: '#FFFFFF', fontWeight: '600' },
-bookBtnTextDisabled: { color: '#9CA3AF' },
 });

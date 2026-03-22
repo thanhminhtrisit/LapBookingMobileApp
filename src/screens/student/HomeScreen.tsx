@@ -19,15 +19,15 @@ import {
   MapPin,
   FlaskConical,
   ChevronRight,
-  LayoutGrid,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
 import { LabResponse } from '../../services/api';
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   AVAILABLE: { label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
   OCCUPIED: { label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
   MAINTENANCE: { label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  CLOSED: { label: 'Closed', color: '#EF4444', bg: '#FEF2F2' },
 };
 
 export default function HomeScreen() {
@@ -112,9 +112,11 @@ export default function HomeScreen() {
           </View>
         ) : (
           filteredLabs.map((lab: LabResponse) => {
-            let displayStatus: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' = 'AVAILABLE';
-            if (lab.status === 'MAINTENANCE' || lab.status === 'CLOSED') {
+            let displayStatus: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'CLOSED' = 'AVAILABLE';
+            if (lab.status === 'MAINTENANCE') {
               displayStatus = 'MAINTENANCE';
+            } else if (lab.status === 'CLOSED') {
+              displayStatus = 'CLOSED';
             } else if (lab.isOccupied) {
               displayStatus = 'OCCUPIED';
             }
@@ -133,7 +135,7 @@ export default function HomeScreen() {
                 />
                 <View style={styles.labInfo}>
                   <View style={styles.labInfoHeader}>
-                    <Text style={styles.labName}>{lab.name}</Text>
+                    <Text style={styles.labName} numberOfLines={1}>{lab.name}</Text>
                     <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
                       <Text style={[styles.statusText, { color: sc.color }]}>{sc.label}</Text>
                     </View>
@@ -141,7 +143,7 @@ export default function HomeScreen() {
                   <View style={styles.labMeta}>
                     <View style={styles.metaItem}>
                       <MapPin size={12} color="#9CA3AF" />
-                      <Text style={styles.metaText}>{lab.location}</Text>
+                      <Text style={styles.metaText} numberOfLines={1}>{lab.location}</Text>
                     </View>
                     <View style={styles.metaItem}>
                       <Users size={12} color="#9CA3AF" />

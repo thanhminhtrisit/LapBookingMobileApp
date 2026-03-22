@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { CalendarDays, Clock, FlaskConical, ChevronRight, Plus, XCircle } from 'lucide-react-native';
+import { CalendarDays, Clock, FlaskConical, Plus, XCircle } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
 import { BookingResponse } from '../../services/api';
 
@@ -153,15 +153,15 @@ export default function MyBookingsScreen() {
                 </View>
 
                 {/* Title */}
-                <Text style={styles.purposeText} style={{ fontWeight: '500', color: '#374151', marginBottom: 4 }}>{booking.title}</Text>
+                <Text style={styles.titleText}>{booking.title}</Text>
                 {booking.note && (
                   <Text style={styles.purposeText} numberOfLines={2}>{booking.note}</Text>
                 )}
 
                 {/* Rejection Note */}
-                {booking.status === 'REJECTED' && booking.note && (
+                {booking.status === 'REJECTED' && (
                   <View style={styles.rejectNote}>
-                    <Text style={styles.rejectNoteText}>Reason: {booking.note}</Text>
+                    <Text style={styles.rejectNoteText}>Your request was declined by admin.</Text>
                   </View>
                 )}
 
@@ -282,6 +282,7 @@ const styles = StyleSheet.create({
   cardMeta: { flexDirection: 'row', gap: 16, marginBottom: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   metaText: { fontSize: 12, color: '#6B7280' },
+  titleText: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 4 },
   purposeText: { fontSize: 12, color: '#9CA3AF', lineHeight: 18, marginBottom: 2 },
   rejectNote: {
     backgroundColor: '#FEF2F2',

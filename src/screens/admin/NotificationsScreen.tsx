@@ -12,12 +12,21 @@ import { useFocusEffect } from '@react-navigation/native';
 import {
   Info,
   BellOff,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
 import { NotificationResponse } from '../../services/api';
 
-const notifConfig = {
-  info: { color: '#60A5FA', bg: '#EFF6FF' },
+const notifConfig: Record<string, { color: string; bg: string; icon: any }> = {
+  BOOKING_APPROVED: { color: '#22C55E', bg: '#F0FDF4', icon: CheckCircle },
+  BOOKING_REJECTED: { color: '#EF4444', bg: '#FEF2F2', icon: XCircle },
+  BOOKING_CANCELLED: { color: '#9CA3AF', bg: '#F3F4F6', icon: XCircle },
+  LAB_MAINTENANCE: { color: '#F59E0B', bg: '#FFFBEB', icon: AlertTriangle },
+  LAB_CLOSED: { color: '#EF4444', bg: '#FEF2F2', icon: AlertTriangle },
+  BOOKING_IN_PROGRESS: { color: '#3B82F6', bg: '#EFF6FF', icon: Info },
+  DEFAULT: { color: '#60A5FA', bg: '#EFF6FF', icon: Info },
 };
 
 const timeAgo = (iso: string) => {
@@ -80,7 +89,9 @@ export default function AdminNotificationsScreen() {
           </View>
         ) : (
           sorted.map((notif: NotificationResponse, idx) => {
-            const { bg, color } = notifConfig.info;
+            const config = notifConfig[notif.type] || notifConfig.DEFAULT;
+            const IconComp = config.icon;
+            
             return (
               <TouchableOpacity
                 key={notif.id}
@@ -92,10 +103,10 @@ export default function AdminNotificationsScreen() {
                 activeOpacity={0.7}
                 onPress={() => !notif.isRead && markNotificationRead(notif.id)}
               >
-                <View style={[styles.iconBox, { backgroundColor: bg }]}>
-                  <Info size={18} color={color} />
+                <View style={[styles.iconBox, { backgroundColor: config.bg }]}>
+                  <IconComp size={18} color={config.color} />
                 </View>
-                <View style={styles.notifContent}>
+                <div style={styles.notifContent}>
                   <View style={styles.notifTop}>
                     <Text
                       style={[styles.notifTitle, !notif.isRead && styles.notifTitleUnread]}
@@ -109,7 +120,7 @@ export default function AdminNotificationsScreen() {
                     </View>
                   </View>
                   <Text style={styles.notifMessage}>{notif.message}</Text>
-                </View>
+                </div>
               </TouchableOpacity>
             );
           })

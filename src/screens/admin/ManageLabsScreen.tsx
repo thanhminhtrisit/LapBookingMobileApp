@@ -27,12 +27,14 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
   AVAILABLE: { label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
   OCCUPIED: { label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
   MAINTENANCE: { label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  CLOSED: { label: 'Closed', color: '#EF4444', bg: '#FEF2F2' },
 };
 
 const labIconMap: Record<string, React.ReactNode> = {
   'AVAILABLE': <Cpu size={18} color="#22C55E" />,
   'OCCUPIED': <FlaskConical size={18} color="#EF4444" />,
   'MAINTENANCE': <AlertCircle size={18} color="#F59E0B" />,
+  'CLOSED': <AlertCircle size={18} color="#EF4444" />,
 };
 
 export default function ManageLabsScreen() {
@@ -53,8 +55,9 @@ export default function ManageLabsScreen() {
       lab.location.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getDisplayStatus = (lab: LabResponse): 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' => {
-    if (lab.status === 'MAINTENANCE' || lab.status === 'CLOSED') return 'MAINTENANCE';
+  const getDisplayStatus = (lab: LabResponse): 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'CLOSED' => {
+    if (lab.status === 'MAINTENANCE') return 'MAINTENANCE';
+    if (lab.status === 'CLOSED') return 'CLOSED';
     if (lab.isOccupied) return 'OCCUPIED';
     return 'AVAILABLE';
   };
@@ -142,7 +145,7 @@ export default function ManageLabsScreen() {
         ) : (
           filtered.map((lab: LabResponse) => {
             const displayStatus = getDisplayStatus(lab);
-            const sc = statusConfig[displayStatus];
+            const status = statusConfig[displayStatus];
             return (
               <View key={lab.id} style={styles.card}>
                 <View style={styles.cardTop}>
@@ -155,8 +158,8 @@ export default function ManageLabsScreen() {
                       {lab.location} · {lab.capacity} Seats
                     </Text>
                     <View style={styles.labFooter}>
-                      <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
-                        <Text style={[styles.statusText, { color: sc.color }]}>{sc.label}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+                        <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
                       </View>
                     </View>
                   </View>
@@ -313,9 +316,4 @@ const styles = StyleSheet.create({
   },
   actionBtnText: { fontSize: 12, fontWeight: '500' },
   actionDivider: { width: 1, backgroundColor: '#F9FAFB' },
-});
-paddingVertical: 10,
-  },
-actionBtnText: { fontSize: 12, fontWeight: '500' },
-actionDivider: { width: 1, backgroundColor: '#F9FAFB' },
 });

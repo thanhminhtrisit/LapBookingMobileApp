@@ -17,7 +17,7 @@ import { LogIn, UserPlus, Mail, Lock, User as UserIcon, Phone } from 'lucide-rea
 import { useApp } from '../context/AppContext';
 
 export default function LoginScreen() {
-  const { login, register, isLoading } = useApp();
+  const { login, register, loginAsMember, loginAsAdmin, isLoading, authError } = useApp();
   const insets = useSafeAreaInsets();
 
   const [isLogin, setIsLogin] = useState(true);
@@ -35,7 +35,7 @@ export default function LoginScreen() {
       try {
         await login(email, password);
       } catch (err) {
-        Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+        // Error is handled by authError or locally
       }
     } else {
       if (!email || !password || !fullName || !phone) {
@@ -45,7 +45,7 @@ export default function LoginScreen() {
       try {
         await register({ fullName, email, password, phone });
       } catch (err: any) {
-        Alert.alert('Registration Failed', err.message || 'Could not create account.');
+        // Error is handled
       }
     }
   };
@@ -140,6 +140,10 @@ export default function LoginScreen() {
               />
             </View>
 
+            {authError ? (
+              <Text style={styles.errorText}>{authError}</Text>
+            ) : null}
+
             <TouchableOpacity
               style={styles.submitBtn}
               onPress={handleSubmit}
@@ -160,12 +164,38 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        <Text style={styles.footerText}>
-          {isLogin
-            ? "Don't have an account? Switch to Register"
-            : "Already have an account? Switch to Login"
-          }
-        </Text>
+        {/* Demo mode */}
+        <Text style={styles.demoLabel}>demo mode</Text>
+        <View style={styles.demoRow}>
+          <TouchableOpacity
+            style={styles.demoOutlineBtn}
+            activeOpacity={0.8}
+            onPress={loginAsMember}
+            disabled={isLoading}
+          >
+            <Text style={styles.demoOutlineText}>Demo as{'\n'}Student</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.demoSolidBtn}
+            activeOpacity={0.8}
+            onPress={loginAsAdmin}
+            disabled={isLoading}
+          >
+            <Text style={styles.demoSolidText}>Demo as{'\n'}Admin</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity 
+          onPress={() => setIsLogin(!isLogin)}
+          style={{ marginTop: 20 }}
+        >
+          <Text style={styles.footerText}>
+            {isLogin
+              ? "Don't have an account? Switch to Register"
+              : "Already have an account? Switch to Login"
+            }
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -251,98 +281,18 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   submitBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  footerText: { marginTop: 20, fontSize: 13, color: '#9CA3AF', textAlign: 'center' },
-});
-<Text style={styles.footerText}>
-  {isLogin
-    ? "Don't have an account? Switch to Register"
-    : "Already have an account? Switch to Login"
-  }
-</Text>
-      </ScrollView >
-    </KeyboardAvoidingView >
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  scrollContent: { paddingHorizontal: 24, alignItems: 'center' },
-  headerSection: { alignItems: 'center', marginBottom: 32 },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
+  errorText: { fontSize: 12, color: '#EF4444', textAlign: 'center', marginBottom: 8 },
+  demoLabel: { fontSize: 11, color: '#9CA3AF', textAlign: 'center', marginVertical: 15 },
+  demoRow: { flexDirection: 'row', gap: 12, marginBottom: 16, width: '100%' },
+  demoOutlineBtn: {
+    flex: 1, borderWidth: 2, borderColor: '#F97316', borderRadius: 12,
+    paddingVertical: 12, alignItems: 'center',
   },
-  logoInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F97316',
-    justifyContent: 'center',
-    alignItems: 'center',
+  demoOutlineText: { fontSize: 13, color: '#F97316', fontWeight: '600', textAlign: 'center' },
+  demoSolidBtn: {
+    flex: 1, backgroundColor: '#F97316', borderRadius: 12,
+    paddingVertical: 12, alignItems: 'center',
   },
-  logoText: { fontSize: 24, fontWeight: '800', color: '#FFFFFF' },
-  title: { fontSize: 28, fontWeight: '800', color: '#111827', marginBottom: 4 },
-  subtitle: { fontSize: 14, color: '#6B7280', textAlign: 'center' },
-  authCard: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 15,
-    elevation: 5,
-  },
-  tabRow: {
-    flexDirection: 'row',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 24,
-  },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
-  activeTab: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  tabText: { fontSize: 14, color: '#9CA3AF', fontWeight: '500' },
-  activeTabText: { color: '#F97316', fontWeight: '600' },
-  form: { gap: 16 },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    paddingHorizontal: 12,
-  },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, height: 50, fontSize: 15, color: '#374151' },
-  submitBtn: {
-    marginTop: 8,
-    height: 54,
-    backgroundColor: '#F97316',
-    borderRadius: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  submitBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  footerText: { marginTop: 20, fontSize: 13, color: '#9CA3AF', textAlign: 'center' },
+  demoSolidText: { fontSize: 13, color: '#FFFFFF', fontWeight: '600', textAlign: 'center' },
+  footerText: { fontSize: 13, color: '#9CA3AF', textAlign: 'center' },
 });
