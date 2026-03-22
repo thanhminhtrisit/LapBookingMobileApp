@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,55 +6,85 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Modal,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
   Plus,
   Search,
   Pencil,
-  Trash2,
   FlaskConical,
   Cpu,
-  Atom,
-  Network,
-  Microscope,
-  ChevronRight,
+  Power,
+  AlertCircle,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
-import { Lab, LabStatus } from '../../data/mockData';
+import { LabResponse } from '../../services/api';
 
-const labIconMap: Record<string, React.ReactNode> = {
-  'lab-1': <Cpu size={18} color="#3B82F6" />,
-  'lab-2': <FlaskConical size={18} color="#A855F7" />,
-  'lab-3': <Atom size={18} color="#22C55E" />,
-  'lab-4': <Network size={18} color="#F97316" />,
-  'lab-5': <Microscope size={18} color="#EC4899" />,
+const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  AVAILABLE: { label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
+  OCCUPIED: { label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
+  MAINTENANCE: { label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  CLOSED: { label: 'Closed', color: '#EF4444', bg: '#FEF2F2' },
 };
 
-const statusConfig: Record<LabStatus, { label: string; color: string; bg: string }> = {
-  available: { label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
-  occupied: { label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
-  maintenance: { label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+const labIconMap: Record<string, React.ReactNode> = {
+  'AVAILABLE': <Cpu size={18} color="#22C55E" />,
+  'OCCUPIED': <FlaskConical size={18} color="#EF4444" />,
+  'MAINTENANCE': <AlertCircle size={18} color="#F59E0B" />,
+  'CLOSED': <AlertCircle size={18} color="#EF4444" />,
 };
 
 export default function ManageLabsScreen() {
   const navigation = useNavigation<any>();
-  const { labs, deleteLab } = useApp();
+  const { labs, labsLoading, fetchLabs, updateLabStatus } = useApp();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchLabs();
+    }, [fetchLabs])
+  );
 
   const filtered = labs.filter(
     (lab) =>
       lab.name.toLowerCase().includes(search.toLowerCase()) ||
-      lab.faculty.toLowerCase().includes(search.toLowerCase())
+      lab.location.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleDelete = (id: string) => {
-    deleteLab(id);
-    setDeleteConfirm(null);
+  const getDisplayStatus = (lab: LabResponse): 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'CLOSED' => {
+    if (lab.status === 'MAINTENANCE') return 'MAINTENANCE';
+    if (lab.status === 'CLOSED') return 'CLOSED';
+    if (lab.isOccupied) return 'OCCUPIED';
+    return 'AVAILABLE';
+  };
+
+  const handleToggleStatus = (lab: LabResponse) => {
+    const currentDisplay = getDisplayStatus(lab);
+    let nextStatus: 'ACTIVE' | 'MAINTENANCE' | 'CLOSED' = 'ACTIVE';
+
+    if (currentDisplay === 'AVAILABLE' || currentDisplay === 'OCCUPIED') {
+      nextStatus = 'MAINTENANCE';
+    } else {
+      nextStatus = 'ACTIVE';
+    }
+
+    if (lab.isOccupied && nextStatus === 'MAINTENANCE') {
+      Alert.alert('Lab Occupied', 'This lab is currently occupied. Setting to maintenance will not cancel current sessions but prevents new ones.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Set Maintenance', onPress: () => updateLabStatus(lab.id, 'MAINTENANCE') },
+      ]);
+      return;
+    }
+
+    updateLabStatus(lab.id, nextStatus);
+  };
+
+  const handleDeletePress = () => {
+    Alert.alert('Not Supported', 'Deleting labs is not currently supported by the backend API.');
   };
 
   return (
@@ -81,7 +111,7 @@ export default function ManageLabsScreen() {
           <Search size={15} color="#9CA3AF" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search labs..."
+            placeholder="Search labs by name or location..."
             placeholderTextColor="#9CA3AF"
             value={search}
             onChangeText={setSearch}
@@ -91,16 +121,13 @@ export default function ManageLabsScreen() {
 
       {/* Stats */}
       <View style={styles.statsRow}>
-        {[
-          { s: 'available' as LabStatus, label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
-          { s: 'occupied' as LabStatus, label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
-          { s: 'maintenance' as LabStatus, label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
-        ].map(({ s, label, color, bg }) => {
-          const count = labs.filter((l) => l.status === s).length;
+        {(['AVAILABLE', 'OCCUPIED', 'MAINTENANCE'] as const).map((s) => {
+          const count = labs.filter((l) => getDisplayStatus(l) === s).length;
+          const conf = statusConfig[s];
           return (
-            <View key={s} style={[styles.statCard, { backgroundColor: bg }]}>
-              <Text style={[styles.statValue, { color }]}>{count}</Text>
-              <Text style={styles.statLabel}>{label}</Text>
+            <View key={s} style={[styles.statCard, { backgroundColor: conf.bg }]}>
+              <Text style={[styles.statValue, { color: conf.color }]}>{count}</Text>
+              <Text style={styles.statLabel}>{conf.label}</Text>
             </View>
           );
         })}
@@ -108,32 +135,32 @@ export default function ManageLabsScreen() {
 
       {/* Labs List */}
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {filtered.length === 0 ? (
+        {labsLoading && filtered.length === 0 ? (
+          <ActivityIndicator size="large" color="#F97316" style={{ marginTop: 40 }} />
+        ) : filtered.length === 0 ? (
           <View style={styles.emptyState}>
             <FlaskConical size={44} color="#E5E7EB" strokeWidth={1} />
             <Text style={styles.emptyText}>No labs found</Text>
           </View>
         ) : (
-          filtered.map((lab: Lab) => {
-            const sc = statusConfig[lab.status];
+          filtered.map((lab: LabResponse) => {
+            const displayStatus = getDisplayStatus(lab);
+            const status = statusConfig[displayStatus];
             return (
               <View key={lab.id} style={styles.card}>
                 <View style={styles.cardTop}>
                   <View style={styles.labIconBox}>
-                    {labIconMap[lab.id] ?? <FlaskConical size={18} color="#9CA3AF" />}
+                    {labIconMap[displayStatus] ?? <FlaskConical size={18} color="#9CA3AF" />}
                   </View>
                   <View style={styles.labInfo}>
                     <Text style={styles.labName} numberOfLines={1}>{lab.name}</Text>
                     <Text style={styles.labMeta} numberOfLines={1}>
-                      {lab.building} · {lab.faculty}
+                      {lab.location} · {lab.capacity} Seats
                     </Text>
                     <View style={styles.labFooter}>
-                      <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
-                        <Text style={[styles.statusText, { color: sc.color }]}>{sc.label}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+                        <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
                       </View>
-                      <Text style={styles.capacityText}>
-                        {lab.capacity} seats · {lab.equipment.length} equipment
-                      </Text>
                     </View>
                   </View>
                 </View>
@@ -152,19 +179,20 @@ export default function ManageLabsScreen() {
                   <TouchableOpacity
                     style={styles.actionBtn}
                     activeOpacity={0.7}
-                    onPress={() => navigation.navigate('LabForm', { id: lab.id })}
+                    onPress={() => handleToggleStatus(lab)}
                   >
-                    <ChevronRight size={13} color="#60A5FA" />
-                    <Text style={[styles.actionBtnText, { color: '#60A5FA' }]}>Equipment</Text>
+                    <Power size={13} color={displayStatus === 'MAINTENANCE' ? '#22C55E' : '#F59E0B'} />
+                    <Text style={[styles.actionBtnText, { color: displayStatus === 'MAINTENANCE' ? '#22C55E' : '#F59E0B' }]}>
+                      {displayStatus === 'MAINTENANCE' ? 'Set Active' : 'Set Maint.'}
+                    </Text>
                   </TouchableOpacity>
                   <View style={styles.actionDivider} />
                   <TouchableOpacity
                     style={styles.actionBtn}
                     activeOpacity={0.7}
-                    onPress={() => setDeleteConfirm(lab.id)}
+                    onPress={handleDeletePress}
                   >
-                    <Trash2 size={13} color="#EF4444" />
-                    <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Delete</Text>
+                    <Text style={[styles.actionBtnText, { color: '#D1D5DB' }]}>Delete</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -172,47 +200,6 @@ export default function ManageLabsScreen() {
           })
         )}
       </ScrollView>
-
-      {/* Delete Confirm Modal */}
-      <Modal
-        visible={Boolean(deleteConfirm)}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setDeleteConfirm(null)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setDeleteConfirm(null)}
-        >
-          <TouchableOpacity style={styles.modalSheet} activeOpacity={1}>
-            <View style={styles.modalHandle} />
-            <View style={styles.trashIcon}>
-              <Trash2 size={22} color="#EF4444" />
-            </View>
-            <Text style={styles.modalTitle}>Delete Lab?</Text>
-            <Text style={styles.modalSub}>
-              This action cannot be undone. All associated bookings will remain.
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setDeleteConfirm(null)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.deleteBtn}
-                activeOpacity={0.8}
-                onPress={() => deleteConfirm && handleDelete(deleteConfirm)}
-              >
-                <Text style={styles.deleteBtnText}>Delete Lab</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
     </View>
   );
 }
@@ -314,7 +301,6 @@ const styles = StyleSheet.create({
   labFooter: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   statusText: { fontSize: 11, fontWeight: '500' },
-  capacityText: { fontSize: 11, color: '#9CA3AF' },
   actionRow: {
     flexDirection: 'row',
     borderTopWidth: 1,
@@ -330,52 +316,4 @@ const styles = StyleSheet.create({
   },
   actionBtnText: { fontSize: 12, fontWeight: '500' },
   actionDivider: { width: 1, backgroundColor: '#F9FAFB' },
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-    marginBottom: 16,
-  },
-  trashIcon: {
-    width: 56,
-    height: 56,
-    backgroundColor: '#FEF2F2',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  modalTitle: { fontSize: 16, color: '#111827', fontWeight: '600', marginBottom: 4 },
-  modalSub: { fontSize: 13, color: '#9CA3AF', textAlign: 'center', marginBottom: 16 },
-  modalButtons: { flexDirection: 'row', gap: 12, width: '100%' },
-  cancelBtn: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  cancelBtnText: { fontSize: 14, color: '#374151', fontWeight: '500' },
-  deleteBtn: {
-    flex: 1,
-    backgroundColor: '#EF4444',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  deleteBtnText: { fontSize: 14, color: '#FFFFFF', fontWeight: '600' },
 });

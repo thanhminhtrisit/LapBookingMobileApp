@@ -11,11 +11,12 @@ import BookingScreen from '../screens/student/BookingScreen';
 import MyBookingsScreen from '../screens/student/MyBookingsScreen';
 import NotificationsScreen from '../screens/student/NotificationsScreen';
 import ProfileScreen from '../screens/student/ProfileScreen';
+import SharedLabsNavigator from './SharedLabsNavigator';
 
 export type HomeStackParamList = {
   LabList: undefined;
-  LabDetail: { id: string };
-  Booking: { id: string };
+  LabDetail: { id: number };
+  Booking: { id: number };
 };
 
 export type StudentTabParamList = {
@@ -28,19 +29,9 @@ export type StudentTabParamList = {
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const Tab = createBottomTabNavigator<StudentTabParamList>();
 
-function HomeStackNavigator() {
-  return (
-    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
-      <HomeStack.Screen name="LabList" component={HomeScreen} />
-      <HomeStack.Screen name="LabDetail" component={LabDetailScreen} />
-      <HomeStack.Screen name="Booking" component={BookingScreen} />
-    </HomeStack.Navigator>
-  );
-}
-
 export default function StudentNavigator() {
   const { notifications } = useApp();
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <Tab.Navigator
@@ -61,7 +52,7 @@ export default function StudentNavigator() {
     >
       <Tab.Screen
         name="HomeStack"
-        component={HomeStackNavigator}
+        component={SharedLabsNavigator}
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, focused }) => (

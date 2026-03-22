@@ -8,42 +8,23 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   ChevronLeft,
-  Plus,
-  Trash2,
   CheckCircle2,
-  Package,
-  ChevronDown,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
-import { LabStatus, Equipment } from '../../data/mockData';
 
-const faculties = [
-  'Computer Science & IT',
-  'Electrical Engineering',
-  'Applied Sciences',
-  'Life Sciences',
-  'Mechanical Engineering',
-  'Civil Engineering',
-  'Business Administration',
+const statusOptions: { value: 'ACTIVE' | 'MAINTENANCE' | 'CLOSED'; label: string; color: string; bg: string }[] = [
+  { value: 'ACTIVE', label: 'Active', color: '#22C55E', bg: '#F0FDF4' },
+  { value: 'MAINTENANCE', label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
+  { value: 'CLOSED', label: 'Closed', color: '#EF4444', bg: '#FEF2F2' },
 ];
 
-const statusOptions: { value: LabStatus; label: string; color: string; bg: string }[] = [
-  { value: 'available', label: 'Available', color: '#22C55E', bg: '#F0FDF4' },
-  { value: 'occupied', label: 'Occupied', color: '#EF4444', bg: '#FEF2F2' },
-  { value: 'maintenance', label: 'Maintenance', color: '#F59E0B', bg: '#FFFBEB' },
-];
-
-interface EquipmentInput {
-  id: string;
-  name: string;
-  quantity: string;
-}
+const faculties = ['CS & IT', 'Engineering', 'Sciences', 'Business', 'Arts'];
 
 const InputField = ({
   label,
@@ -75,7 +56,7 @@ const InputField = ({
 );
 
 const fieldStyles = StyleSheet.create({
-  wrapper: { marginBottom: 4 },
+  wrapper: { marginBottom: 16 },
   label: { fontSize: 12, color: '#6B7280', marginBottom: 6 },
   input: {
     borderWidth: 1,
@@ -85,6 +66,7 @@ const fieldStyles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 14,
     color: '#374151',
+    backgroundColor: '#FFFFFF',
   },
   inputError: { borderColor: '#EF4444' },
   errorText: { fontSize: 11, color: '#EF4444', marginTop: 4 },
@@ -93,7 +75,7 @@ const fieldStyles = StyleSheet.create({
 export default function LabFormScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { labs, addLab, updateLab } = useApp();
+  const { labs, createLab, updateLab } = useApp();
   const insets = useSafeAreaInsets();
 
   const id = route.params?.id;
@@ -101,60 +83,39 @@ export default function LabFormScreen() {
   const existingLab = labs.find((l) => l.id === id);
 
   const [name, setName] = useState('');
-  const [location, setLocation] = useState('');
+  const [code, setCode] = useState('');
   const [building, setBuilding] = useState('');
-  const [capacity, setCapacity] = useState('');
+  const [location, setLocation] = useState('');
   const [faculty, setFaculty] = useState(faculties[0]);
-  const [status, setStatus] = useState<LabStatus>('available');
+  const [capacity, setCapacity] = useState('');
+  const [status, setStatus] = useState<'ACTIVE' | 'MAINTENANCE' | 'CLOSED'>('ACTIVE');
   const [description, setDescription] = useState('');
-  const [equipment, setEquipment] = useState<EquipmentInput[]>([
-    { id: 'eq-new-1', name: '', quantity: '1' },
-  ]);
+  const [imageURL, setImageURL] = useState('');
+  
+  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [facultyPickerVisible, setFacultyPickerVisible] = useState(false);
 
   useEffect(() => {
     if (existingLab) {
       setName(existingLab.name);
+      setCode(existingLab.code || '');
+      setBuilding(existingLab.building || '');
       setLocation(existingLab.location);
-      setBuilding(existingLab.building);
+      setFaculty(existingLab.faculty || faculties[0]);
       setCapacity(String(existingLab.capacity));
-      setFaculty(existingLab.faculty);
-      setStatus(existingLab.status);
+      setStatus(existingLab.status as any);
       setDescription(existingLab.description);
-      setEquipment(
-        existingLab.equipment.map((eq) => ({
-          id: eq.id,
-          name: eq.name,
-          quantity: String(eq.quantity),
-        }))
-      );
+      setImageURL(existingLab.imageURL || '');
     }
-  }, [id]);
-
-  const addEquipmentRow = () => {
-    setEquipment((prev) => [
-      ...prev,
-      { id: `eq-new-${Date.now()}`, name: '', quantity: '1' },
-    ]);
-  };
-
-  const removeEquipment = (eqId: string) => {
-    setEquipment((prev) => prev.filter((e) => e.id !== eqId));
-  };
-
-  const updateEquipmentField = (eqId: string, field: 'name' | 'quantity', value: string) => {
-    setEquipment((prev) =>
-      prev.map((e) => (e.id === eqId ? { ...e, [field]: value } : e))
-    );
-  };
+  }, [id, existingLab]);
 
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = 'Lab name is required';
-    if (!location.trim()) errs.location = 'Location is required';
+    if (!code.trim()) errs.code = 'Lab code is required';
     if (!building.trim()) errs.building = 'Building is required';
+    if (!location.trim()) errs.location = 'Location is required';
     if (!capacity || isNaN(Number(capacity)) || Number(capacity) < 1)
       errs.capacity = 'Valid capacity required';
     if (!description.trim()) errs.description = 'Description is required';
@@ -162,29 +123,35 @@ export default function LabFormScreen() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return;
-    const finalEquipment: Equipment[] = equipment
-      .filter((e) => e.name.trim())
-      .map((e) => ({ id: e.id, name: e.name.trim(), quantity: Number(e.quantity) || 1 }));
-
+    
+    setLoading(true);
     const labData = {
-      name,
-      location,
-      building,
+      name: name.trim(),
+      code: code.trim().toUpperCase(),
+      building: building.trim(),
+      faculty: faculty,
+      location: location.trim(),
       capacity: Number(capacity),
-      faculty,
       status,
-      description,
-      equipment: finalEquipment,
+      description: description.trim(),
+      imageURL: imageURL.trim() || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800',
     };
 
-    if (isEdit && id) {
-      updateLab(id, labData);
-    } else {
-      addLab(labData);
+    try {
+      if (isEdit && id) {
+        await updateLab(id, labData);
+      } else {
+        await createLab(labData);
+      }
+      setSubmitted(true);
+    } catch (error) {
+      console.error('Failed to save lab:', error);
+      setErrors({ submit: 'Failed to save lab. Please try again.' });
+    } finally {
+      setLoading(false);
     }
-    setSubmitted(true);
   };
 
   if (submitted) {
@@ -225,10 +192,15 @@ export default function LabFormScreen() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {errors.submit ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>{errors.submit}</Text>
+          </View>
+        ) : null}
 
         {/* Basic Info */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionHeader}>BASIC INFORMATION</Text>
+          <Text style={styles.sectionHeader}>LAB DETAILS</Text>
           <InputField
             label="Lab Name *"
             value={name}
@@ -236,54 +208,56 @@ export default function LabFormScreen() {
             placeholder="e.g. Computer Science Lab A"
             error={errors.name}
           />
-          <View style={styles.twoCol}>
-            <View style={{ flex: 1 }}>
-              <InputField
-                label="Building *"
-                value={building}
-                onChange={setBuilding}
-                placeholder="e.g. Block C"
-                error={errors.building}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <InputField
-                label="Capacity *"
-                value={capacity}
-                onChange={setCapacity}
-                placeholder="e.g. 30"
-                keyboardType="numeric"
-                error={errors.capacity}
-              />
-            </View>
-          </View>
           <InputField
-            label="Full Location *"
+            label="Lab Code *"
+            value={code}
+            onChange={setCode}
+            placeholder="e.g. LAB-101"
+            error={errors.code}
+          />
+          <InputField
+            label="Building *"
+            value={building}
+            onChange={setBuilding}
+            placeholder="e.g. Building C"
+            error={errors.building}
+          />
+          <InputField
+            label="Location/Room *"
             value={location}
             onChange={setLocation}
-            placeholder="e.g. Block C, Level 2, Room C201"
+            placeholder="e.g. Room 201"
             error={errors.location}
           />
-        </View>
 
-        {/* Classification */}
-        <View style={styles.formSection}>
-          <Text style={styles.sectionHeader}>CLASSIFICATION</Text>
-
-          {/* Faculty Picker */}
           <View style={fieldStyles.wrapper}>
             <Text style={fieldStyles.label}>Faculty</Text>
-            <TouchableOpacity
-              style={styles.pickerBtn}
-              onPress={() => setFacultyPickerVisible(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.pickerBtnText}>{faculty}</Text>
-              <ChevronDown size={16} color="#9CA3AF" />
-            </TouchableOpacity>
+            <View style={styles.facultyRow}>
+              {faculties.map((f) => {
+                const active = faculty === f;
+                return (
+                  <TouchableOpacity
+                    key={f}
+                    style={[styles.facultyChip, active && styles.facultyChipActive]}
+                    onPress={() => setFaculty(f)}
+                  >
+                    <Text style={[styles.facultyChipText, active && styles.facultyChipTextActive]}>{f}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
-          {/* Status */}
+          <InputField
+            label="Capacity *"
+            value={capacity}
+            onChange={setCapacity}
+            placeholder="e.g. 30"
+            keyboardType="numeric"
+            error={errors.capacity}
+          />
+          
+          {/* Status Select */}
           <View style={fieldStyles.wrapper}>
             <Text style={fieldStyles.label}>Status</Text>
             <View style={styles.statusRow}>
@@ -315,10 +289,14 @@ export default function LabFormScreen() {
               })}
             </View>
           </View>
-        </View>
 
-        {/* Description */}
-        <View style={styles.formSection}>
+          <InputField
+            label="Image URL"
+            value={imageURL}
+            onChange={setImageURL}
+            placeholder="https://example.com/image.jpg"
+          />
+          
           <Text style={fieldStyles.label}>Description *</Text>
           <TextInput
             style={[
@@ -327,7 +305,7 @@ export default function LabFormScreen() {
             ]}
             value={description}
             onChangeText={setDescription}
-            placeholder="Describe the lab's purpose, features, and intended use..."
+            placeholder="Lab purpose and features..."
             placeholderTextColor="#D1D5DB"
             multiline
             numberOfLines={4}
@@ -338,101 +316,24 @@ export default function LabFormScreen() {
           )}
         </View>
 
-        {/* Equipment */}
-        <View style={styles.formSection}>
-          <View style={styles.equipHeader}>
-            <View style={styles.equipHeaderLeft}>
-              <Package size={14} color="#374151" />
-              <Text style={styles.sectionHeader}>EQUIPMENT INVENTORY</Text>
-            </View>
-            <TouchableOpacity onPress={addEquipmentRow} activeOpacity={0.7}>
-              <Text style={styles.addItemText}>+ Add Item</Text>
-            </TouchableOpacity>
-          </View>
-
-          {equipment.length === 0 ? (
-            <TouchableOpacity style={styles.addEquipEmpty} onPress={addEquipmentRow}>
-              <Plus size={20} color="#D1D5DB" />
-              <Text style={styles.addEquipEmptyText}>Add Equipment</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.equipList}>
-              {equipment.map((eq, idx) => (
-                <View key={eq.id} style={styles.equipRow}>
-                  <Text style={styles.equipIdx}>{idx + 1}</Text>
-                  <TextInput
-                    style={styles.equipNameInput}
-                    value={eq.name}
-                    onChangeText={(v) => updateEquipmentField(eq.id, 'name', v)}
-                    placeholder="Equipment name"
-                    placeholderTextColor="#D1D5DB"
-                  />
-                  <View style={styles.equipQty}>
-                    <Text style={styles.equipQtyX}>×</Text>
-                    <TextInput
-                      style={styles.equipQtyInput}
-                      value={eq.quantity}
-                      onChangeText={(v) => updateEquipmentField(eq.id, 'quantity', v)}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                  <TouchableOpacity
-                    style={styles.equipRemoveBtn}
-                    onPress={() => removeEquipment(eq.id)}
-                  >
-                    <Trash2 size={13} color="#D1D5DB" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-
-        <View style={{ height: 16 }} />
+        <View style={{ height: 20 }} />
       </ScrollView>
 
       {/* Save Button */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-        <TouchableOpacity style={styles.saveBtn} activeOpacity={0.8} onPress={handleSave}>
-          <Text style={styles.saveBtnText}>{isEdit ? 'Save Changes' : 'Create Lab'}</Text>
+        <TouchableOpacity 
+          style={[styles.saveBtn, loading && { opacity: 0.7 }]} 
+          activeOpacity={0.8} 
+          onPress={handleSave}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.saveBtnText}>{isEdit ? 'Save Changes' : 'Create Lab'}</Text>
+          )}
         </TouchableOpacity>
       </View>
-
-      {/* Faculty Picker Modal */}
-      <Modal
-        visible={facultyPickerVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setFacultyPickerVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setFacultyPickerVisible(false)}
-        >
-          <TouchableOpacity style={styles.pickerSheet} activeOpacity={1}>
-            <View style={styles.pickerHandle} />
-            <Text style={styles.pickerTitle}>Select Faculty</Text>
-            {faculties.map((f) => (
-              <TouchableOpacity
-                key={f}
-                style={[styles.pickerItem, faculty === f && styles.pickerItemActive]}
-                onPress={() => {
-                  setFaculty(f);
-                  setFacultyPickerVisible(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.pickerItemText, faculty === f && styles.pickerItemTextActive]}>
-                  {f}
-                </Text>
-                {faculty === f && <CheckCircle2 size={16} color="#F97316" />}
-              </TouchableOpacity>
-            ))}
-            <View style={{ height: insets.bottom + 8 }} />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -465,21 +366,9 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontWeight: '600',
     letterSpacing: 0.8,
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  twoCol: { flexDirection: 'row', gap: 12 },
-  pickerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  pickerBtnText: { fontSize: 14, color: '#374151' },
-  statusRow: { flexDirection: 'row', gap: 8 },
+  statusRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
   statusOption: {
     flex: 1,
     paddingVertical: 10,
@@ -489,6 +378,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusOptionText: { fontSize: 11, fontWeight: '500' },
+  facultyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+  facultyChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' },
+  facultyChipActive: { borderColor: '#F97316', backgroundColor: '#FFF7ED' },
+  facultyChipText: { fontSize: 12, color: '#6B7280' },
+  facultyChipTextActive: { color: '#F97316', fontWeight: '600' },
   textArea: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -498,58 +392,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#374151',
     minHeight: 100,
+    backgroundColor: '#FFFFFF',
   },
   textAreaError: { borderColor: '#EF4444' },
-  equipHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  equipHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  addItemText: { fontSize: 12, color: '#F97316' },
-  addEquipEmpty: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingVertical: 20,
-    alignItems: 'center',
-    gap: 6,
-  },
-  addEquipEmptyText: { fontSize: 13, color: '#D1D5DB' },
-  equipList: { gap: 8 },
-  equipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  equipIdx: { fontSize: 12, color: '#D1D5DB', width: 16 },
-  equipNameInput: { flex: 1, fontSize: 13, color: '#374151' },
-  equipQty: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  equipQtyX: { fontSize: 11, color: '#9CA3AF' },
-  equipQtyInput: { width: 36, fontSize: 13, color: '#374151', textAlign: 'center' },
-  equipRemoveBtn: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
   footer: {
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -569,6 +414,15 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   saveBtnText: { fontSize: 15, color: '#FFFFFF', fontWeight: '600' },
+  errorBanner: {
+    backgroundColor: '#FEF2F2',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
+  errorBannerText: { fontSize: 13, color: '#EF4444', textAlign: 'center' },
   // Success
   successContainer: {
     flex: 1,
@@ -596,44 +450,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backBtn2Text: { fontSize: 15, color: '#FFFFFF', fontWeight: '600' },
-  // Faculty Picker Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  pickerSheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '70%',
-  },
-  pickerHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  pickerTitle: {
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '600',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  pickerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 13,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  pickerItemActive: {},
-  pickerItemText: { fontSize: 14, color: '#374151' },
-  pickerItemTextActive: { color: '#F97316', fontWeight: '500' },
 });

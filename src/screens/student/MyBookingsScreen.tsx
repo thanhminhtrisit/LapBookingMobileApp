@@ -1,52 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { CalendarDays, Clock, FlaskConical, ChevronRight, Plus } from 'lucide-react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { CalendarDays, Clock, FlaskConical, Plus, XCircle } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
-import { BookingStatus, timeSlotLabels } from '../../data/mockData';
+import { BookingResponse } from '../../services/api';
 
-const statusConfig: Record<BookingStatus, { label: string; color: string; bg: string }> = {
-  approved: { label: 'Approved', color: '#22C55E', bg: '#F0FDF4' },
-  rejected: { label: 'Rejected', color: '#EF4444', bg: '#FEF2F2' },
-  pending: { label: 'Pending', color: '#F59E0B', bg: '#FFFBEB' },
+const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  APPROVED: { label: 'Approved', color: '#22C55E', bg: '#F0FDF4' },
+  REJECTED: { label: 'Rejected', color: '#EF4444', bg: '#FEF2F2' },
+  PENDING: { label: 'Pending', color: '#F59E0B', bg: '#FFFBEB' },
+  CANCELLED: { label: 'Cancelled', color: '#9CA3AF', bg: '#F3F4F6' },
 };
 
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const formatDate = (iso: string) => {
-  const [y, m, d] = iso.split('-').map(Number);
-  return `${d} ${MONTHS_SHORT[m - 1]} ${y}`;
+const formatDateFromISO = (iso: string) => {
+  if (!iso) return '';
+  const [datePart] = iso.split('T');
+  const [y, m, d] = datePart.split('-').map(Number);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
+                  'Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d} ${MONTHS[m - 1]} ${y}`;
 };
 
-type FilterType = BookingStatus | 'all';
-const filtersList: FilterType[] = ['all', 'pending', 'approved', 'rejected'];
+const formatTimeRange = (startTime: string, endTime: string) => {
+  const start = startTime.split('T')[1]?.slice(0, 5) ?? '';
+  const end   = endTime.split('T')[1]?.slice(0, 5)   ?? '';
+  return `${start} – ${end}`;
+};
+
+type FilterType = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
+const filtersList: FilterType[] = ['ALL', 'PENDING', 'APPROVED', 'REJECTED'];
 const filterLabels: Record<FilterType, string> = {
-  all: 'All', pending: 'Pending', approved: 'Approved', rejected: 'Rejected',
+  ALL: 'All', PENDING: 'Pending', APPROVED: 'Approved', REJECTED: 'Rejected',
 };
 
 export default function MyBookingsScreen() {
   const navigation = useNavigation<any>();
-  const { bookings, currentUser } = useApp();
+  const { myBookings, bookingsLoading, fetchMyBookings, cancelBooking } = useApp();
   const insets = useSafeAreaInsets();
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
 
-  const myBookings = bookings
-    .filter((b) => b.studentId === currentUser?.id)
-    .filter((b) => (activeFilter === 'all' ? true : b.status === activeFilter))
+  useFocusEffect(
+    useCallback(() => {
+      fetchMyBookings();
+    }, [fetchMyBookings])
+  );
+
+  const filtered = myBookings
+    .filter((b) => (activeFilter === 'ALL' ? true : b.status === activeFilter))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const totalBookings = bookings.filter((b) => b.studentId === currentUser?.id);
   const counts: Record<FilterType, number> = {
-    all: totalBookings.length,
-    pending: totalBookings.filter((b) => b.status === 'pending').length,
-    approved: totalBookings.filter((b) => b.status === 'approved').length,
-    rejected: totalBookings.filter((b) => b.status === 'rejected').length,
+    ALL: myBookings.length,
+    PENDING: myBookings.filter((b) => b.status === 'PENDING').length,
+    APPROVED: myBookings.filter((b) => b.status === 'APPROVED').length,
+    REJECTED: myBookings.filter((b) => b.status === 'REJECTED').length,
+  };
+
+  const handleCancelPress = (id: number) => {
+    Alert.alert('Cancel Booking', 'Are you sure you want to cancel this reservation?', [
+      { text: 'No', style: 'cancel' },
+      { text: 'Yes, Cancel', style: 'destructive', onPress: () => cancelBooking(id) },
+    ]);
   };
 
   return (
@@ -55,7 +78,7 @@ export default function MyBookingsScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>My Bookings</Text>
-          <Text style={styles.headerSub}>{totalBookings.length} total reservations</Text>
+          <Text style={styles.headerSub}>{myBookings.length} total reservations</Text>
         </View>
         <TouchableOpacity
           style={styles.addBtn}
@@ -89,16 +112,19 @@ export default function MyBookingsScreen() {
 
       {/* List */}
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {myBookings.length === 0 ? (
+        {bookingsLoading && filtered.length === 0 ? (
+          <ActivityIndicator size="large" color="#F97316" style={{ marginTop: 40 }} />
+        ) : filtered.length === 0 ? (
           <View style={styles.emptyState}>
             <CalendarDays size={44} color="#E5E7EB" strokeWidth={1} />
             <Text style={styles.emptyTitle}>No bookings found</Text>
             <Text style={styles.emptyHint}>Tap + to make a new reservation</Text>
           </View>
         ) : (
-          myBookings.map((booking) => {
-            const { label, color, bg } = statusConfig[booking.status];
-            const slotInfo = timeSlotLabels[booking.timeSlot];
+          filtered.map((booking: BookingResponse) => {
+            const sc = statusConfig[booking.status] || statusConfig.PENDING;
+            const canCancel = booking.status === 'PENDING' || booking.status === 'APPROVED';
+            
             return (
               <View key={booking.id} style={styles.card}>
                 {/* Top Row */}
@@ -109,8 +135,8 @@ export default function MyBookingsScreen() {
                     </View>
                     <Text style={styles.labName} numberOfLines={1}>{booking.labName}</Text>
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: bg }]}>
-                    <Text style={[styles.statusText, { color }]}>{label}</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
+                    <Text style={[styles.statusText, { color: sc.color }]}>{sc.label}</Text>
                   </View>
                 </View>
 
@@ -118,28 +144,40 @@ export default function MyBookingsScreen() {
                 <View style={styles.cardMeta}>
                   <View style={styles.metaItem}>
                     <CalendarDays size={12} color="#9CA3AF" />
-                    <Text style={styles.metaText}>{formatDate(booking.date)}</Text>
+                    <Text style={styles.metaText}>{formatDateFromISO(booking.startTime)}</Text>
                   </View>
                   <View style={styles.metaItem}>
                     <Clock size={12} color="#9CA3AF" />
-                    <Text style={styles.metaText}>{slotInfo.label} · {slotInfo.time}</Text>
+                    <Text style={styles.metaText}>{formatTimeRange(booking.startTime, booking.endTime)}</Text>
                   </View>
                 </View>
 
-                {/* Purpose */}
-                <Text style={styles.purposeText} numberOfLines={2}>{booking.purpose}</Text>
+                {/* Title */}
+                <Text style={styles.titleText}>{booking.title}</Text>
+                {booking.note && (
+                  <Text style={styles.purposeText} numberOfLines={2}>{booking.note}</Text>
+                )}
 
                 {/* Rejection Note */}
-                {booking.status === 'rejected' && booking.note && (
+                {booking.status === 'REJECTED' && (
                   <View style={styles.rejectNote}>
-                    <Text style={styles.rejectNoteText}>Reason: {booking.note}</Text>
+                    <Text style={styles.rejectNoteText}>Your request was declined by admin.</Text>
                   </View>
                 )}
 
-                {/* Footer */}
+                {/* Actions */}
                 <View style={styles.cardFooter}>
                   <Text style={styles.locationText}>{booking.labLocation}</Text>
-                  <ChevronRight size={14} color="#D1D5DB" />
+                  {canCancel && (
+                    <TouchableOpacity 
+                      style={styles.cancelBtn} 
+                      onPress={() => handleCancelPress(booking.id)}
+                      activeOpacity={0.7}
+                    >
+                      <XCircle size={14} color="#EF4444" />
+                      <Text style={styles.cancelBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             );
@@ -244,7 +282,8 @@ const styles = StyleSheet.create({
   cardMeta: { flexDirection: 'row', gap: 16, marginBottom: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   metaText: { fontSize: 12, color: '#6B7280' },
-  purposeText: { fontSize: 12, color: '#9CA3AF', lineHeight: 18, marginBottom: 4 },
+  titleText: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 4 },
+  purposeText: { fontSize: 12, color: '#9CA3AF', lineHeight: 18, marginBottom: 2 },
   rejectNote: {
     backgroundColor: '#FEF2F2',
     borderRadius: 8,
@@ -264,4 +303,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#F9FAFB',
   },
   locationText: { fontSize: 11, color: '#D1D5DB' },
+  cancelBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  cancelBtnText: { fontSize: 12, color: '#EF4444', fontWeight: '500' },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   TextInput,
   StyleSheet,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   CalendarDays,
@@ -18,18 +20,29 @@ import {
   FlaskConical,
 } from 'lucide-react-native';
 import { useApp } from '../../context/AppContext';
-import { Booking, BookingStatus, timeSlotLabels } from '../../data/mockData';
+import { BookingResponse } from '../../services/api';
 
-const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const formatDate = (iso: string) => {
-  const [y, m, d] = iso.split('-').map(Number);
-  return `${d} ${MONTHS_SHORT[m - 1]} ${y}`;
+// Helper functions for date/time extraction from ISO string
+const formatDateFromISO = (iso: string) => {
+  if (!iso) return '';
+  const [datePart] = iso.split('T');
+  const [y, m, d] = datePart.split('-').map(Number);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
+                  'Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d} ${MONTHS[m - 1]} ${y}`;
 };
 
-const statusConfig: Record<BookingStatus, { label: string; color: string; bg: string }> = {
-  approved: { label: 'Approved', color: '#22C55E', bg: '#F0FDF4' },
-  rejected: { label: 'Rejected', color: '#EF4444', bg: '#FEF2F2' },
-  pending: { label: 'Pending Review', color: '#F59E0B', bg: '#FFFBEB' },
+const formatTimeRange = (startTime: string, endTime: string) => {
+  const start = startTime.split('T')[1]?.slice(0, 5) ?? '';
+  const end   = endTime.split('T')[1]?.slice(0, 5)   ?? '';
+  return `${start} – ${end}`;
+};
+
+const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  APPROVED: { label: 'Approved', color: '#22C55E', bg: '#F0FDF4' },
+  REJECTED: { label: 'Rejected', color: '#EF4444', bg: '#FEF2F2' },
+  PENDING:  { label: 'Pending Review', color: '#F59E0B', bg: '#FFFBEB' },
+  CANCELLED: { label: 'Cancelled', color: '#9CA3AF', bg: '#F3F4F6' },
 };
 
 const avatarColors = [
@@ -40,36 +53,48 @@ const avatarColors = [
   { bg: '#E0E7FF', text: '#4338CA' },
 ];
 
-const getAvatarColor = (name: string) => avatarColors[name.charCodeAt(0) % avatarColors.length];
-const getInitials = (name: string) => name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+const getAvatarColor = (name: string) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length];
+const getInitials = (name: string) => name ? name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) : '??';
 
-type FilterType = 'all' | BookingStatus;
+type FilterType = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 const filterTabs: { id: FilterType; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'pending', label: 'Pending' },
-  { id: 'approved', label: 'Approved' },
-  { id: 'rejected', label: 'Rejected' },
+  { id: 'PENDING', label: 'Pending' },
+  { id: 'APPROVED', label: 'Approved' },
+  { id: 'REJECTED', label: 'Rejected' },
+  { id: 'ALL', label: 'All' },
 ];
 
 export default function ApprovalsScreen() {
-  const { bookings, updateBookingStatus } = useApp();
+  const { pendingBookings, bookingsLoading, fetchPendingBookings, approveBooking, rejectBooking } = useApp();
   const insets = useSafeAreaInsets();
-  const [activeFilter, setActiveFilter] = useState<FilterType>('pending');
-  const [rejectModal, setRejectModal] = useState<{ bookingId: string } | null>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('PENDING');
+  const [rejectModal, setRejectModal] = useState<{ bookingId: number } | null>(null);
   const [rejectNote, setRejectNote] = useState('');
 
-  const pending = bookings.filter((b) => b.status === 'pending').length;
-  const approved = bookings.filter((b) => b.status === 'approved').length;
-  const rejected = bookings.filter((b) => b.status === 'rejected').length;
+  useFocusEffect(
+    useCallback(() => {
+      fetchPendingBookings();
+    }, [fetchPendingBookings])
+  );
 
-  const filtered = [...bookings]
-    .filter((b) => (activeFilter === 'all' ? true : b.status === activeFilter))
+  const pendingCount = pendingBookings.filter((b) => b.status === 'PENDING').length;
+  const approvedCount = pendingBookings.filter((b) => b.status === 'APPROVED').length;
+  const rejectedCount = pendingBookings.filter((b) => b.status === 'REJECTED').length;
+
+  const filtered = [...pendingBookings]
+    .filter((b) => (activeFilter === 'ALL' ? true : b.status === activeFilter))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const handleReject = (bookingId: string) => {
-    updateBookingStatus(bookingId, 'rejected', rejectNote || 'Request not approved by admin.');
+  const handleApprove = async (id: number) => {
+    await approveBooking(id);
+    fetchPendingBookings();
+  };
+
+  const handleReject = async (id: number) => {
+    await rejectBooking(id, rejectNote || 'Request not approved by admin.');
     setRejectModal(null);
     setRejectNote('');
+    fetchPendingBookings();
   };
 
   return (
@@ -85,9 +110,9 @@ export default function ApprovalsScreen() {
         <Text style={styles.headerSub}>Manage student reservation requests</Text>
         <View style={styles.statsRow}>
           {[
-            { label: 'Pending', value: pending, color: '#FDE68A' },
-            { label: 'Approved', value: approved, color: '#BBF7D0' },
-            { label: 'Rejected', value: rejected, color: '#FECACA' },
+            { label: 'Pending', value: pendingCount, color: '#FDE68A' },
+            { label: 'Approved', value: approvedCount, color: '#BBF7D0' },
+            { label: 'Rejected', value: rejectedCount, color: '#FECACA' },
           ].map(({ label, value, color }) => (
             <View key={label} style={styles.statCard}>
               <Text style={[styles.statValue, { color }]}>{value}</Text>
@@ -115,27 +140,29 @@ export default function ApprovalsScreen() {
 
       {/* Requests List */}
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {filtered.length === 0 ? (
+        {bookingsLoading && filtered.length === 0 ? (
+          <ActivityIndicator size="large" color="#F97316" style={{ marginTop: 40 }} />
+        ) : filtered.length === 0 ? (
           <View style={styles.emptyState}>
             <CheckCircle size={44} color="#E5E7EB" strokeWidth={1} />
             <Text style={styles.emptyText}>No requests found</Text>
           </View>
         ) : (
-          filtered.map((booking: Booking) => {
-            const sc = statusConfig[booking.status];
-            const av = getAvatarColor(booking.studentName);
+          filtered.map((booking: BookingResponse) => {
+            const sc = statusConfig[booking.status] || statusConfig.PENDING;
+            const av = getAvatarColor(booking.userName);
             return (
               <View key={booking.id} style={styles.card}>
                 {/* Student Row */}
                 <View style={styles.studentRow}>
                   <View style={[styles.studentAvatar, { backgroundColor: av.bg }]}>
                     <Text style={[styles.studentAvatarText, { color: av.text }]}>
-                      {getInitials(booking.studentName)}
+                      {getInitials(booking.userName)}
                     </Text>
                   </View>
                   <View style={styles.studentInfo}>
-                    <Text style={styles.studentName}>{booking.studentName}</Text>
-                    <Text style={styles.studentFaculty}>{booking.studentFaculty}</Text>
+                    <Text style={styles.studentName}>{booking.userName}</Text>
+                    <Text style={styles.studentFaculty}>Member Request</Text>
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
                     <Text style={[styles.statusText, { color: sc.color }]}>{sc.label}</Text>
@@ -155,26 +182,29 @@ export default function ApprovalsScreen() {
                 <View style={styles.metaRow}>
                   <View style={styles.metaItem}>
                     <CalendarDays size={12} color="#9CA3AF" />
-                    <Text style={styles.metaText}>{formatDate(booking.date)}</Text>
+                    <Text style={styles.metaText}>{formatDateFromISO(booking.startTime)}</Text>
                   </View>
                   <View style={styles.metaItem}>
                     <Clock size={12} color="#9CA3AF" />
                     <Text style={styles.metaText}>
-                      {timeSlotLabels[booking.timeSlot].label} · {timeSlotLabels[booking.timeSlot].time}
+                      {formatTimeRange(booking.startTime, booking.endTime)}
                     </Text>
                   </View>
                 </View>
 
-                {/* Purpose */}
-                <Text style={styles.purposeText} numberOfLines={2}>{booking.purpose}</Text>
+                {/* Title */}
+                <Text style={[styles.purposeText, { fontWeight: '600', color: '#111827' }]}>{booking.title}</Text>
+                {booking.note && booking.status !== 'REJECTED' && (
+                  <Text style={styles.purposeText} numberOfLines={2}>{booking.note}</Text>
+                )}
 
                 {/* Action Buttons */}
-                {booking.status === 'pending' && (
+                {booking.status === 'PENDING' && (
                   <View style={styles.actionRow}>
                     <TouchableOpacity
                       style={styles.approveBtn}
                       activeOpacity={0.8}
-                      onPress={() => updateBookingStatus(booking.id, 'approved')}
+                      onPress={() => handleApprove(booking.id)}
                     >
                       <CheckCircle size={15} color="#22C55E" />
                       <Text style={styles.approveBtnText}>Approve</Text>
@@ -191,9 +221,9 @@ export default function ApprovalsScreen() {
                 )}
 
                 {/* Rejection Note */}
-                {booking.status === 'rejected' && booking.note && (
+                {booking.status === 'REJECTED' && booking.note && (
                   <View style={styles.noteBox}>
-                    <Text style={styles.noteText}>Note: {booking.note}</Text>
+                    <Text style={styles.noteText}>Reason: {booking.note}</Text>
                   </View>
                 )}
               </View>
@@ -335,7 +365,7 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', gap: 16, marginBottom: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   metaText: { fontSize: 12, color: '#6B7280' },
-  purposeText: { fontSize: 12, color: '#9CA3AF', lineHeight: 18, marginBottom: 4 },
+  purposeText: { fontSize: 12, color: '#6B7280', lineHeight: 18, marginBottom: 4 },
   actionRow: {
     flexDirection: 'row',
     gap: 8,
@@ -373,7 +403,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   noteText: { fontSize: 11, color: '#EF4444' },
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
